@@ -1,0 +1,47 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+
+export type AuthState = { error?: string; info?: string };
+
+export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
+  const email = String(form.get("email") ?? "").trim();
+  const password = String(form.get("password") ?? "");
+  if (!email || !password) return { error: "Preencha e-mail e senha." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (/confirm/i.test(error.message)) return { error: "Confirme seu e-mail pelo link que enviamos antes de entrar." };
+    return { error: "E-mail ou senha incorretos." };
+  }
+  redirect("/");
+}
+
+export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
+  const name = String(form.get("name") ?? "").trim();
+  const email = String(form.get("email") ?? "").trim();
+  const password = String(form.get("password") ?? "");
+  if (!email || password.length < 8) return { error: "Use um e-mail válido e uma senha com pelo menos 8 caracteres." };
+  const h = await headers();
+  const origin = h.get("origin") ?? `https://${h.get("host")}`;
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { display_name: name || undefined }, emailRedirectTo: `${origin}/auth/confirm` },
+  });
+  if (error) {
+    if (/rate/i.test(error.message)) return { error: "Muitos cadastros seguidos. Espere alguns minutos e tente de novo." };
+    if (/registered/i.test(error.message)) return { error: "Esse e-mail já tem conta. Use Entrar." };
+    return { error: error.message };
+  }
+  if (data.session) redirect("/");
+  return { info: `Enviamos um link de confirmação para ${email}. Abra o e-mail neste aparelho para entrar.` };
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}

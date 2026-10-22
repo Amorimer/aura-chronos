@@ -1,0 +1,25 @@
+feature,area,priority,original,clone,notes
+Conta por e-mail,onboarding,must,yes,no,
+Chat com o assistente,assistente,must,yes,no,
+Criar evento por texto livre,assistente,must,yes,no,
+Criar evento a partir de print/foto,assistente,must,yes,no,
+Criar item por áudio,assistente,must,yes,no,
+Criar tarefa sem horário (to-do),tarefas,must,yes,no,
+Criar nota,notas,must,yes,no,
+Lembrete em horário certo com notificação,lembretes,must,yes,no,
+Editar e excluir itens pelo chat,assistente,must,yes,no,
+Ver agenda do dia e da semana,agenda,must,yes,no,
+Detectar conflito de horário,agenda,must,yes,no,
+Eventos recorrentes,agenda,should,yes,no,
+Resumo do dia sob pedido,assistente,should,yes,no,
+Memória de preferências,assistente,should,yes,no,
+Resumo matinal automático,lembretes,should,yes,no,
+Ver agenda em Google/Apple Calendar,integrações,should,yes,no,feed ICS na v1
+Marcar evento como importante (Me ligue),lembretes,could,yes,no,v1: flag + notificação insistente; ligação real fora
+Instalar no Android como app,plataforma,must,yes,no,PWA na v1; Play Store depois
+Sync bidirecional Google Calendar,integrações,could,yes,no,precisa de OAuth do usuário
+Gatilhos (preços/notícias),gatilhos,could,yes,skip,fora do escopo escolhido
+Links de agendamento,booking,could,yes,skip,fora do escopo escolhido
+Ligação telefônica Call Me,lembretes,could,yes,skip,custo de telefonia
+Coordenação de grupo,coordenação,could,yes,skip,fora do escopo escolhido
+Planos pagos,billing,could,yes,skip,uso próprio
