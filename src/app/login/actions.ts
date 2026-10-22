@@ -34,10 +34,16 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   if (error) {
     if (/rate/i.test(error.message)) return { error: "Muitos cadastros seguidos. Espere alguns minutos e tente de novo." };
     if (/registered/i.test(error.message)) return { error: "Esse e-mail já tem conta. Use Entrar." };
+    if (/database error|not_allowed/i.test(error.message)) {
+      return { error: "Este e-mail ainda não foi liberado para usar a Pauta. Peça para quem administra o app incluir você." };
+    }
     return { error: error.message };
   }
   if (data.session) redirect("/");
-  return { info: `Enviamos um link de confirmação para ${email}. Abra o e-mail neste aparelho para entrar.` };
+  // Accounts on the allowlist are confirmed on creation, so sign in right away.
+  const { error: e2 } = await supabase.auth.signInWithPassword({ email, password });
+  if (!e2) redirect("/");
+  return { info: `Conta criada. Se pedir confirmação, abra o link enviado para ${email}.` };
 }
 
 export async function signOut() {
