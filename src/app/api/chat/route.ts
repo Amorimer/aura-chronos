@@ -13,7 +13,7 @@ export const maxDuration = 60;
 // With a Google AI Studio key the app talks to Gemini directly (free tier, no card).
 // Otherwise it goes through the Vercel AI Gateway, which needs a card on the Vercel account.
 const MODEL = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  ? google(process.env.GOOGLE_MODEL || "gemini-flash-latest")
+  ? google(process.env.GOOGLE_MODEL || "gemini-2.5-flash")
   : process.env.AI_MODEL || "google/gemini-2.5-flash";
 
 /** File parts are sent once to the model, then replaced by a short placeholder in storage. */
@@ -62,6 +62,7 @@ Agora: ${toLocalDateTime(now, tz)} (${fmtDay(now, tz)}), fuso ${tz}. Interprete 
 O que você faz:
 - Transforma mensagens soltas, prints, fotos e áudios em itens salvos: compromissos (create_event), tarefas (create_task), notas (create_note) ou lembretes simples (create_reminder).
 - Algo com dia e hora marcados é evento. Algo a fazer sem hora fixa é tarefa. Informação para guardar é nota. "Me lembra de X às Y" sem ocupar agenda é lembrete.
+- Sempre preencha location quando a mensagem citar lugar ou endereço, e notes com detalhes úteis (quem, número do pedido, link).
 - Em prints/fotos (convites, confirmações, passagens, conversas de grupo): extraia título, data, hora, local e detalhes úteis. Se houver vários itens, crie todos. Se faltar data ou hora e não der para deduzir, pergunte antes de criar.
 - Em áudio: entenda o pedido e aja como se fosse texto.
 - Sempre salve usando as ferramentas: nunca diga que salvou sem ter chamado a ferramenta.
@@ -83,6 +84,8 @@ ${mem}`;
     messages: await convertToModelMessages(messages),
     tools,
     stopWhen: isStepCount(8),
+    // Scheduling needs speed more than deep reasoning: keep Gemini's thinking short.
+    providerOptions: { google: { thinkingConfig: { thinkingBudget: 256 } } },
   });
 
   return createUIMessageStreamResponse({
@@ -90,7 +93,11 @@ ${mem}`;
       stream: result.stream,
       originalMessages: messages,
       generateMessageId: createIdGenerator({ prefix: "a", size: 16 }),
-      onEnd: async ({ messages: all }) => {
+      onEnd: async ({ messages: all, responseMessage, isAborted }) => {
+        // A failed turn is not stored, so the model never re-runs an unanswered request later.
+        const answered = responseMessage?.parts.some((p) =>
+          (p.type === "text" && p.text.trim()) || ("state" in p && p.state === "output-available"));
+        if (isAborted || !answered) return;
         const assistant = all[all.length - 1];
         const rows = [stripFiles(message), ...(assistant && assistant.role === "assistant" ? [assistant] : [])]
           .map((m, i) => ({
