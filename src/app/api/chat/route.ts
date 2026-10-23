@@ -13,7 +13,7 @@ export const maxDuration = 120;
 // With a Google AI Studio key the app talks to Gemini directly (free tier, no card).
 // Otherwise it goes through the Vercel AI Gateway, which needs a card on the Vercel account.
 const MODEL = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  ? google(process.env.GOOGLE_MODEL || "gemini-3.8-flash")
+  ? google(process.env.GOOGLE_MODEL || "gemini-3.5-flash-lite")
   : process.env.AI_MODEL || "google/gemini-2.5-flash";
 
 /** File parts are sent once to the model, then replaced by a short placeholder in storage. */
@@ -84,8 +84,6 @@ ${mem}`;
     messages: await convertToModelMessages(messages),
     tools,
     stopWhen: isStepCount(8),
-    // Scheduling needs speed more than deep reasoning: keep Gemini's thinking short.
-    providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } },
   });
 
   return createUIMessageStreamResponse({
