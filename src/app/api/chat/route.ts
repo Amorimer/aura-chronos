@@ -8,7 +8,7 @@ import { getProfile } from "@/lib/data";
 import { buildTools } from "@/lib/agent-tools";
 import { fmtDay, toLocalDateTime } from "@/lib/time";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // With a Google AI Studio key the app talks to Gemini directly (free tier, no card).
 // Otherwise it goes through the Vercel AI Gateway, which needs a card on the Vercel account.
