@@ -84,7 +84,7 @@ export function Settings({ profile, memories, email, feedUrl }: { profile: Profi
       <div className="px-4 pb-8 flex flex-col gap-4">
         <Section title="Notificações">
           {push === "unsupported" ? (
-            <p className="text-sm">Este navegador não recebe notificações. No Android, use o Chrome. No iPhone, instale a Pauta na tela inicial (Compartilhar → Adicionar à Tela de Início) e abra por lá.</p>
+            <p className="text-sm">Este navegador não recebe notificações. No Android, use o Chrome. No iPhone, instale o Aura Chronos na tela inicial (Compartilhar → Adicionar à Tela de Início) e abra por lá.</p>
           ) : push === "denied" ? (
             <p className="text-sm">As notificações estão bloqueadas para este site. Libere em Configurações do navegador → Site → Notificações e volte aqui.</p>
           ) : (
@@ -108,7 +108,7 @@ export function Settings({ profile, memories, email, feedUrl }: { profile: Profi
 
         {!standalone && (
           <Section title="Instalar como app">
-            <p className="text-sm">No Android (Chrome): menu ⋮ → <b>Instalar app</b>. No iPhone (Safari): Compartilhar → <b>Adicionar à Tela de Início</b>. A Pauta abre em tela cheia e os lembretes chegam como os de qualquer app.</p>
+            <p className="text-sm">No Android (Chrome): menu ⋮ → <b>Instalar app</b>. No iPhone (Safari): Compartilhar → <b>Adicionar à Tela de Início</b>. O Aura Chronos abre em tela cheia e os lembretes chegam como os de qualquer app.</p>
           </Section>
         )}
 
@@ -124,7 +124,7 @@ export function Settings({ profile, memories, email, feedUrl }: { profile: Profi
         </Section>
 
         <Section title="Ver no Google Agenda ou no iPhone">
-          <p className="text-sm">Assine este endereço para ver os compromissos da Pauta junto com sua agenda. No Google Agenda: Outras agendas → + → <b>Do URL</b>. No iPhone: Ajustes → Calendário → Contas → Adicionar → Outra → <b>Calendário Assinado</b>.</p>
+          <p className="text-sm">Assine este endereço para ver os compromissos do Aura Chronos junto com sua agenda. No Google Agenda: Outras agendas → + → <b>Do URL</b>. No iPhone: Ajustes → Calendário → Contas → Adicionar → Outra → <b>Calendário Assinado</b>.</p>
           <div className="flex gap-2">
             <input readOnly value={feedUrl} aria-label="Endereço da agenda" className={`${fieldCls} text-xs font-mono`} onFocus={(e) => e.target.select()} />
             <button onClick={async () => { await navigator.clipboard.writeText(feedUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }}

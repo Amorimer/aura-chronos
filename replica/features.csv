@@ -1,22 +1,22 @@
 feature,area,priority,original,clone,notes
-Conta por e-mail,onboarding,must,yes,no,
-Chat com o assistente,assistente,must,yes,no,
-Criar evento por texto livre,assistente,must,yes,no,
-Criar evento a partir de print/foto,assistente,must,yes,no,
-Criar item por áudio,assistente,must,yes,no,
-Criar tarefa sem horário (to-do),tarefas,must,yes,no,
-Criar nota,notas,must,yes,no,
-Lembrete em horário certo com notificação,lembretes,must,yes,no,
-Editar e excluir itens pelo chat,assistente,must,yes,no,
-Ver agenda do dia e da semana,agenda,must,yes,no,
-Detectar conflito de horário,agenda,must,yes,no,
-Eventos recorrentes,agenda,should,yes,no,
-Resumo do dia sob pedido,assistente,should,yes,no,
-Memória de preferências,assistente,should,yes,no,
-Resumo matinal automático,lembretes,should,yes,no,
-Ver agenda em Google/Apple Calendar,integrações,should,yes,no,feed ICS na v1
-Marcar evento como importante (Me ligue),lembretes,could,yes,no,v1: flag + notificação insistente; ligação real fora
-Instalar no Android como app,plataforma,must,yes,no,PWA na v1; Play Store depois
+Conta por e-mail,onboarding,must,yes,yes,
+Chat com o assistente,assistente,must,yes,yes,
+Criar evento por texto livre,assistente,must,yes,yes,
+Criar evento a partir de print/foto,assistente,must,yes,yes,
+Criar item por áudio,assistente,must,yes,yes,
+Criar tarefa sem horário (to-do),tarefas,must,yes,yes,
+Criar nota,notas,must,yes,yes,
+Lembrete em horário certo com notificação,lembretes,must,yes,yes,
+Editar e excluir itens pelo chat,assistente,must,yes,yes,
+Ver agenda do dia e da semana,agenda,must,yes,yes,
+Detectar conflito de horário,agenda,must,yes,yes,
+Eventos recorrentes,agenda,should,yes,yes,
+Resumo do dia sob pedido,assistente,should,yes,yes,
+Memória de preferências,assistente,should,yes,yes,
+Resumo matinal automático,lembretes,should,yes,yes,
+Ver agenda em Google/Apple Calendar,integrações,should,yes,partial,"feed ICS, uma via"
+Marcar evento como importante (Me ligue),lembretes,could,yes,partial,"alerta insistente por push, sem ligação"
+Instalar no Android como app,plataforma,must,yes,yes,PWA na v1; Play Store depois
 Sync bidirecional Google Calendar,integrações,could,yes,no,precisa de OAuth do usuário
 Gatilhos (preços/notícias),gatilhos,could,yes,skip,fora do escopo escolhido
 Links de agendamento,booking,could,yes,skip,fora do escopo escolhido

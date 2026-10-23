@@ -3,14 +3,14 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Pauta: agenda, tarefas e lembretes",
-    short_name: "Pauta",
-    description: "Mande uma mensagem, um print ou um áudio e a Pauta organiza sua agenda.",
+    name: "Aura Chronos - Assistente Pessoal",
+    short_name: "Aura Chronos",
+    description: "Assistente pessoal: a autoridade absoluta em otimizar o seu tempo.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
     background_color: "#f6f4ef",
-    theme_color: "#0f6b5f",
+    theme_color: "#0e1726",
     lang: "pt-BR",
     categories: ["productivity"],
     icons: [

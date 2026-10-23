@@ -15,8 +15,10 @@ export default function LoginPage() {
   return (
     <main className="min-h-dvh flex flex-col justify-center px-6 py-10 max-w-sm mx-auto pt-safe">
       <div className="mb-10">
-        <div className="text-[13px] font-semibold tracking-wide uppercase text-accent">Pauta</div>
-        <h1 className="mt-2 text-[28px] leading-[34px] font-bold">Fale do seu dia. A Pauta organiza.</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/192" alt="" width={56} height={56} className="rounded-2xl mb-5" />
+        <div className="text-[13px] font-semibold tracking-wide uppercase text-accent">Aura Chronos · Assistente Pessoal</div>
+        <h1 className="mt-2 text-[28px] leading-[34px] font-bold">A autoridade absoluta em otimizar o seu tempo.</h1>
         <p className="mt-3 text-muted text-[15px] leading-6">
           Mande uma mensagem, um print de convite ou um áudio. Vira compromisso, tarefa ou lembrete, e você é avisado na hora.
         </p>

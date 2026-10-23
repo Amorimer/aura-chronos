@@ -4,10 +4,11 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pauta",
-  description: "Seu assistente de agenda, tarefas e lembretes.",
-  appleWebApp: { capable: true, title: "Pauta", statusBarStyle: "default" },
+  title: "Aura Chronos",
+  description: "Assistente pessoal: a autoridade absoluta em otimizar o seu tempo.",
+  appleWebApp: { capable: true, title: "Aura Chronos", statusBarStyle: "default" },
   icons: { icon: "/icons/192", apple: "/icons/180" },
+  applicationName: "Aura Chronos",
 };
 
 export const viewport: Viewport = {

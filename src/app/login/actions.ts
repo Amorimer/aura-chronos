@@ -35,7 +35,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     if (/rate/i.test(error.message)) return { error: "Muitos cadastros seguidos. Espere alguns minutos e tente de novo." };
     if (/registered/i.test(error.message)) return { error: "Esse e-mail já tem conta. Use Entrar." };
     if (/database error|not_allowed/i.test(error.message)) {
-      return { error: "Este e-mail ainda não foi liberado para usar a Pauta. Peça para quem administra o app incluir você." };
+      return { error: "Este e-mail ainda não foi liberado para usar o Aura Chronos. Peça para quem administra o app incluir você." };
     }
     return { error: error.message };
   }

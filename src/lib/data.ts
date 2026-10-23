@@ -6,7 +6,7 @@ export async function getProfile(supabase: SupabaseClient, userId: string): Prom
   const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
   return (
     (data as Profile) ?? {
-      id: userId, display_name: null, assistant_name: "Pauta", timezone: "America/Sao_Paulo",
+      id: userId, display_name: null, assistant_name: "Aura Chronos", timezone: "America/Sao_Paulo",
       morning_brief: true, morning_brief_time: "07:30", feed_token: "",
     }
   );
