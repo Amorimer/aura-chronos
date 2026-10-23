@@ -2,6 +2,7 @@ import {
   convertToModelMessages, createIdGenerator, createUIMessageStreamResponse, isStepCount, streamText,
   toUIMessageStream, type UIMessage,
 } from "ai";
+import { google } from "@ai-sdk/google";
 import { requireUser } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/data";
 import { buildTools } from "@/lib/agent-tools";
@@ -9,7 +10,11 @@ import { fmtDay, toLocalDateTime } from "@/lib/time";
 
 export const maxDuration = 60;
 
-const MODEL = process.env.AI_MODEL || "google/gemini-2.5-flash";
+// With a Google AI Studio key the app talks to Gemini directly (free tier, no card).
+// Otherwise it goes through the Vercel AI Gateway, which needs a card on the Vercel account.
+const MODEL = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  ? google(process.env.GOOGLE_MODEL || "gemini-flash-latest")
+  : process.env.AI_MODEL || "google/gemini-2.5-flash";
 
 /** File parts are sent once to the model, then replaced by a short placeholder in storage. */
 function stripFiles(m: UIMessage): UIMessage {
