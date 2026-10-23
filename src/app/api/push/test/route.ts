@@ -15,7 +15,7 @@ export async function POST() {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        JSON.stringify({ title: "Aura Chronos", body: "Notificações funcionando. É assim que seus lembretes vão chegar.", tag: "test", url: "/ajustes" }),
+        JSON.stringify({ title: "Aura Cronos", body: "Notificações funcionando. É assim que seus lembretes vão chegar.", tag: "test", url: "/ajustes" }),
       );
       sent++;
     } catch {

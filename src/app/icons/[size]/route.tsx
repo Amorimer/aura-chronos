@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 const SIZES = [180, 192, 512, 1024];
 
-// Aura Chronos mark: a glowing ring (the aura) around clock hands (chronos).
+// Aura Cronos mark: a glowing ring (the aura) around clock hands (chronos).
 export async function GET(_req: Request, ctx: { params: Promise<{ size: string }> }) {
   const { size: raw } = await ctx.params;
   const maskable = raw.endsWith("m");

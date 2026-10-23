@@ -1,4 +1,4 @@
-// Aura Chronos service worker: push notifications and an offline fallback for navigations.
+// Aura Cronos service worker: push notifications and an offline fallback for navigations.
 const CACHE = "aura-v1";
 
 self.addEventListener("install", (e) => {
@@ -18,8 +18,8 @@ self.addEventListener("fetch", (e) => {
 
 self.addEventListener("push", (e) => {
   let data = {};
-  try { data = e.data ? e.data.json() : {}; } catch { data = { title: "Aura Chronos", body: e.data && e.data.text() }; }
-  const title = data.title || "Aura Chronos";
+  try { data = e.data ? e.data.json() : {}; } catch { data = { title: "Aura Cronos", body: e.data && e.data.text() }; }
+  const title = data.title || "Aura Cronos";
   const options = {
     body: data.body || "",
     tag: data.tag,

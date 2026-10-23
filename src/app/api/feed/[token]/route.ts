@@ -28,9 +28,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ token: string 
   const { data, error } = await sb.rpc("feed_events", { p_token: id });
   if (error) return new Response("error", { status: 500 });
 
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Aura Chronos//PT-BR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Aura Chronos"];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Aura Cronos//PT-BR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Aura Cronos"];
   for (const e of data as Array<Record<string, string & boolean>>) {
-    lines.push("BEGIN:VEVENT", `UID:${e.id}@aura-chronos`, `DTSTAMP:${utc(e.updated_at)}`);
+    lines.push("BEGIN:VEVENT", `UID:${e.id}@aura-cronos`, `DTSTAMP:${utc(e.updated_at)}`);
     if (e.all_day) {
       lines.push(`DTSTART;VALUE=DATE:${localDate(e.start_at, e.timezone)}`, `DTEND;VALUE=DATE:${localDate(e.end_at, e.timezone)}`);
     } else {

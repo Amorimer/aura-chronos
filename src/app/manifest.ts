@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Aura Chronos - Assistente Pessoal",
-    short_name: "Aura Chronos",
+    name: "Aura Cronos - Assistente Pessoal",
+    short_name: "Aura Cronos",
     description: "Assistente pessoal: a autoridade absoluta em otimizar o seu tempo.",
     start_url: "/",
     display: "standalone",
