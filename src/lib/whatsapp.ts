@@ -7,7 +7,16 @@ export function whatsappConfigured() {
   return !!(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
 }
 
-async function post(body: unknown) {
+// Brazilian mobiles: WhatsApp IDs often drop the 9th digit (55 21 6515-8676), but the
+// test number's allowed list and the API expect it (55 21 96515-8676). Put it back.
+export function normalizeTo(to: string) {
+  const d = to.replace(/\D/g, "");
+  if (/^55\d{2}[6-9]\d{7}$/.test(d)) return d.slice(0, 4) + "9" + d.slice(4);
+  return d;
+}
+
+async function post(body: { to: string } & Record<string, unknown>) {
+  body = { ...body, to: normalizeTo(body.to) };
   const res = await fetch(`${API}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
