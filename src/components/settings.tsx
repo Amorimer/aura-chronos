@@ -8,6 +8,7 @@ import { signOut } from "@/app/login/actions";
 import type { Profile } from "@/lib/types";
 import { Field, fieldCls } from "./sheet";
 import { IconTrash } from "./icons";
+import { WhatsAppConnect } from "./whatsapp-connect";
 
 const ZONES = ["America/Sao_Paulo", "America/Manaus", "America/Cuiaba", "America/Belem", "America/Fortaleza", "America/Recife",
   "America/Bahia", "America/Porto_Velho", "America/Rio_Branco", "America/Noronha", "Europe/Lisbon", "America/New_York", "UTC"];
@@ -104,6 +105,10 @@ export function Settings({ profile, memories, email, feedUrl }: { profile: Profi
               <input type="time" value={p.morning_brief_time.slice(0, 5)} onChange={(e) => e.target.value && save({ morning_brief_time: e.target.value })} className={fieldCls} />
             </Field>
           )}
+        </Section>
+
+        <Section title="WhatsApp">
+          <WhatsAppConnect userId={p.id} initialPhone={p.whatsapp_phone ?? null} initialNotify={p.whatsapp_notify ?? true} />
         </Section>
 
         {!standalone && (

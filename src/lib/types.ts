@@ -24,4 +24,5 @@ export type ReminderRow = {
 export type Profile = {
   id: string; display_name: string | null; assistant_name: string; timezone: string;
   morning_brief: boolean; morning_brief_time: string; feed_token: string;
+  whatsapp_phone?: string | null; whatsapp_notify?: boolean; whatsapp_last_inbound_at?: string | null;
 };
