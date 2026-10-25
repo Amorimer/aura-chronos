@@ -30,6 +30,10 @@ export async function sendWhatsAppText(to: string, text: string) {
   return post({ to, type: "text", text: { body: text.slice(0, 4000), preview_url: true } });
 }
 
+export async function sendWhatsAppTemplate(to: string, name: string, lang: string) {
+  return post({ to, type: "template", template: { name, language: { code: lang } } });
+}
+
 /**
  * A reminder or notice. `window` says whether the user wrote to us in the last ~23h.
  * Template (outside the window): WHATSAPP_TEMPLATE with two body variables: {{1}} title, {{2}} details.
