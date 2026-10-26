@@ -1,5 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { after } from "next/server";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { sendWhatsAppText, validSignature } from "@/lib/whatsapp";
+import { answerOnWhatsApp, type Inbound } from "@/lib/whatsapp-agent";
+import { adminClient, adminConfigured } from "@/lib/supabase/admin";
+
+export const maxDuration = 120;
 
 // Meta calls GET once to verify the URL.
 export async function GET(req: Request) {
@@ -9,8 +14,6 @@ export async function GET(req: Request) {
   }
   return new Response("forbidden", { status: 403 });
 }
-
-type Inbound = { from: string; type: string; text?: { body: string }; button?: { text: string } };
 
 export async function POST(req: Request) {
   const raw = await req.text();
@@ -25,6 +28,12 @@ export async function POST(req: Request) {
   const messages: Inbound[] = (payload.entry ?? []).flatMap((e: { changes?: { value?: { messages?: Inbound[] } }[] }) =>
     (e.changes ?? []).flatMap((c) => c.value?.messages ?? []));
 
+  // Answer Meta right away; the assistant can take a few seconds.
+  after(() => handle(messages, sb, secret, appUrl));
+  return new Response("ok");
+}
+
+async function handle(messages: Inbound[], sb: SupabaseClient, secret: string, appUrl: string) {
   for (const m of messages) {
     const text = (m.text?.body ?? m.button?.text ?? "").trim();
     const code = text.toUpperCase().match(/AURA-[A-F0-9]{6}/)?.[0];
@@ -32,13 +41,13 @@ export async function POST(req: Request) {
       const { data: name } = await sb.rpc("wa_link", { p_secret: secret, p_code: code, p_phone: m.from });
       if (name !== null && name !== undefined) {
         await sendWhatsAppText(m.from,
-          `Pronto${name ? `, ${name}` : ""}! Seu WhatsApp está conectado ao Aura Cronos. Seus lembretes e o resumo da manhã vão chegar aqui.\n\nPara parar, mande PARAR.`);
+          `Pronto${name ? `, ${name}` : ""}! Seu WhatsApp está conectado ao Aura Cronos. Seus lembretes e o resumo da manhã vão chegar aqui, e você pode falar comigo por aqui como no app: marcar compromissos, criar tarefas, guardar notas, mandar áudio ou print.\n\nExperimente: \"reunião amanhã às 15h\" ou \"como está minha semana?\"\n\nPara parar os lembretes, mande PARAR.`);
       } else {
         await sendWhatsAppText(m.from, "Esse código expirou ou não existe. Abra o Aura Cronos em Ajustes e toque em Conectar WhatsApp de novo.");
       }
       continue;
     }
-    const stop = /^(parar|sair|stop|cancelar)$/i.test(text);
+    const stop = /^(parar|stop)$/i.test(text);
     const start = /^(voltar|ativar|start)$/i.test(text);
     const { data: name } = await sb.rpc("wa_touch", { p_secret: secret, p_phone: m.from, p_stop: stop });
     if (name === null || name === undefined) {
@@ -47,9 +56,11 @@ export async function POST(req: Request) {
       await sendWhatsAppText(m.from, "Certo, parei de enviar lembretes por aqui. Para voltar, ative em Ajustes no app.");
     } else if (start) {
       await sendWhatsAppText(m.from, "Para voltar a receber, ative \"Lembretes no WhatsApp\" em Ajustes no app.");
-    } else {
+    } else if (!adminConfigured()) {
       await sendWhatsAppText(m.from, `Por aqui eu envio seus lembretes. Para criar ou mudar compromissos, use o app:${appUrl ? `\n${appUrl}` : ""}`);
+    } else {
+      const { data: p } = await adminClient().from("profiles").select("id").eq("whatsapp_phone", m.from).single();
+      if (p?.id) await answerOnWhatsApp(p.id, m);
     }
   }
-  return new Response("ok");
 }

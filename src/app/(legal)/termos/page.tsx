@@ -10,7 +10,7 @@ export default function Termos() {
       <h2>Uso aceitável</h2>
       <p>Não use o app para enviar spam, conteúdo ilegal ou para acessar contas de outras pessoas.</p>
       <h2>WhatsApp</h2>
-      <p>As mensagens enviadas pelo WhatsApp são apenas lembretes e avisos que você ativou. Você pode cancelar a qualquer momento mandando PARAR.</p>
+      <p>Pelo WhatsApp você recebe os lembretes que ativou e pode falar com o assistente sobre sua agenda, tarefas, notas e lembretes. Para parar os lembretes, mande PARAR; para desconectar, use Ajustes no app.</p>
       <h2>Contato</h2>
       <p><a href="mailto:amorimer.designer@gmail.com">amorimer.designer@gmail.com</a> · <a href="/privacidade">Política de Privacidade</a></p>
     </>

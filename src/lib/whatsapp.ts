@@ -26,6 +26,26 @@ async function post(body: { to: string } & Record<string, unknown>) {
   return { ok: res.ok, status: res.status, json };
 }
 
+/** Blue ticks plus the "typing…" indicator while the assistant thinks. */
+export async function markReadTyping(messageId: string) {
+  await fetch(`${API}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", status: "read", message_id: messageId, typing_indicator: { type: "text" } }),
+  }).catch(() => {});
+}
+
+/** Downloads a photo, voice note or document someone sent us. */
+export async function downloadMedia(mediaId: string): Promise<{ data: Uint8Array; mediaType: string } | null> {
+  const auth = { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` };
+  const meta = await fetch(`${API}/${mediaId}`, { headers: auth }).then((r) => r.json()).catch(() => null);
+  if (!meta?.url) return null;
+  if (meta.file_size && meta.file_size > 15_000_000) return null;
+  const res = await fetch(meta.url, { headers: auth });
+  if (!res.ok) return null;
+  return { data: new Uint8Array(await res.arrayBuffer()), mediaType: (meta.mime_type || "application/octet-stream").split(";")[0] };
+}
+
 export async function sendWhatsAppText(to: string, text: string) {
   return post({ to, type: "text", text: { body: text.slice(0, 4000), preview_url: true } });
 }

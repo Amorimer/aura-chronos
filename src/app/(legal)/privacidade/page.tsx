@@ -17,7 +17,7 @@ export default function Privacidade() {
       <p>Somente para fazer o app funcionar: organizar sua agenda, interpretar seus pedidos e enviar os lembretes que você ativou. Não vendemos dados nem usamos para publicidade.</p>
 
       <h2>WhatsApp</h2>
-      <p>A conexão é opcional e individual. Você envia um código ao nosso número e passamos a mandar seus lembretes por lá. Para parar, mande PARAR no WhatsApp ou toque em Desconectar em Ajustes; o número é apagado da sua conta.</p>
+      <p>A conexão é opcional e individual. Você envia um código ao nosso número e passamos a mandar seus lembretes por lá. As mensagens, áudios e imagens que você manda para o nosso número são tratados como pedidos ao assistente, do mesmo jeito que no app, e ficam no histórico da sua conta. Para parar, mande PARAR no WhatsApp ou toque em Desconectar em Ajustes; o número é apagado da sua conta.</p>
 
       <h2>Quem processa os dados</h2>
       <ul>
