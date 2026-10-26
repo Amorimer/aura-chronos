@@ -82,7 +82,7 @@ export function Agenda({ tz }: { tz: string }) {
         <div className="h-14 px-3 flex items-center justify-between">
           <button onClick={() => setDay(addDaysToDate(day, -7))} aria-label="Semana anterior" className="w-10 h-10 grid place-items-center rounded-full"><IconChevronLeft /></button>
           <div className="text-center">
-            <h1 className="text-[17px] font-semibold capitalize">{fmtDay(localToUtc(day, tz), tz, { month: "long", year: "numeric" })}</h1>
+            <h1 className="text-[17px] font-semibold first-letter:uppercase">{fmtDay(localToUtc(day, tz), tz, { month: "long", year: "numeric" })}</h1>
           </div>
           <div className="flex items-center">
             {day !== today && <button onClick={() => setDay(today)} className="text-xs font-semibold text-accent px-2 h-10">Hoje</button>}

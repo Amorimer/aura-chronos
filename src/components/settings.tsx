@@ -153,6 +153,9 @@ export function Settings({ profile, memories, email, feedUrl }: { profile: Profi
 
         <Section title="Conta">
           <button onClick={clearChat} className="self-start text-sm font-semibold">Apagar histórico da conversa</button>
+          <p className="text-sm text-muted">
+            <a href="/termos" target="_blank" className="underline">Termos de Uso</a> · <a href="/privacidade" target="_blank" className="underline">Política de Privacidade</a>
+          </p>
           <form action={signOut}><button className="text-sm font-semibold text-danger">Sair</button></form>
         </Section>
       </div>
