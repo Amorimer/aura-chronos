@@ -61,7 +61,11 @@ Esforço M (humano ~4-6 semanas / CC ~3-5 dias), risco médio. Reusa agent-tools
 Abordagem B, sem data de lançamento: publicar só quando cumprir o **critério de lançamento** abaixo. Etapas:
 
 ### 1. Conectar o Google Agenda
-- **Login continua por e-mail e senha, só com @gmail.com.** O Google OAuth serve só para conectar a agenda (não cria conta), em Ajustes e no WhatsApp ("conectar Google Agenda" manda o link).
+- **Formas de entrar (todas com conta @gmail.com):**
+  - código de 6 dígitos ou link enviado pelo WhatsApp (E1);
+  - código de 6 dígitos enviado ao Gmail (no site e no app; serve também para recuperar o acesso de quem trocou de número);
+  - senha, opcional (quem quiser cria em Ajustes).
+- **Nenhuma delas é login de terceiros.** O Google OAuth serve só para conectar a agenda e não cria conta; ele é oferecido em Ajustes e no WhatsApp ("conectar Google Agenda" manda o link).
 - **Escopos:** `calendar.events` (ler, criar, editar e apagar eventos) e `calendar.calendarlist.readonly` (listar agendas).
 - **Uma conta Google por assinatura.** Dentro dela, lê a agenda principal por padrão; a pessoa marca outras agendas da mesma conta em Ajustes.
 - **Conta Google adicional:** não disponível no lançamento; vira adicional pago meses depois.
@@ -85,17 +89,24 @@ Abordagem B, sem data de lançamento: publicar só quando cumprir o **critério 
 - **Conteúdo de utilidade real:** a lista de compromissos do dia (hora, título, local) e as tarefas que vencem hoje. Sem promoção, sem pedir resposta como objetivo.
 - **Só é enviado** se houver ao menos um compromisso ou tarefa no dia.
 - **Envio:** grátis como mensagem comum se a janela de 24h já estiver aberta; senão, como template de utilidade (pago).
-- **Botões:**
-  - "Ok": só confirma, nada muda.
-  - "Adiar 10 min" (nos lembretes): manda o mesmo lembrete de novo 10 minutos depois; o evento no Google não muda.
+- **Botões:** os de cada template estão na tabela da etapa 3. O resumo da manhã tem só "Ok", que confirma e não muda nada.
 - **Sem resposta:** os lembretes do dia saem no horário de qualquer forma, como template se a janela estiver fechada.
 - **Se a Meta reclassificar o template como marketing ou rejeitá-lo:** o resumo deixa de ser enviado com a janela fechada (só sai quando a pessoa já falou com o Aura nas últimas 24h). Os lembretes de cada compromisso continuam como template de utilidade.
 
 ### 3. Templates, posicionamento e custo
-- **Templates de utilidade aprovados:**
-  - lembrete de compromisso (`{{1}}` título, `{{2}}` hora e local);
-  - resumo da manhã;
-  - aviso de conexão do Google Agenda caída ("Sua conexão com o Google Agenda caiu. Toque para reconectar.").
+- **Templates de utilidade (lista única, usada nas Dependências e no critério de lançamento):**
+
+| Template | Variáveis | Botões de resposta rápida |
+|---|---|---|
+| `aura_lembrete` | `{{1}}` título, `{{2}}` hora e local | Vou · Remarcar · Adiar 10 min |
+| `aura_resumo_dia` | `{{1}}` lista de compromissos e tarefas do dia | Ok |
+| `aura_resumo_semana` | `{{1}}` lista da semana por dia | Ok |
+| `aura_conexao_google` | nenhuma ("Sua conexão com o Google Agenda caiu. Toque para reconectar.") | botão de link para reconectar |
+| `aura_numero_trocado` | `{{1}}` Gmail mascarado | nenhum (também enviado por e-mail ao Gmail como reserva) |
+
+- **Lembrete sem local:** `{{2}}` recebe só a hora (a Meta não aceita variável vazia).
+- **Lista de espera:** é avisada por e-mail no Gmail, não pelo WhatsApp.
+- **Os resumos (dia e semana) seguem a mesma regra:** se a Meta reclassificar um deles como marketing ou rejeitá-lo, ele só é enviado com a janela de 24h aberta.
 - **Se o template do aviso for rejeitado:** o aviso vai junto no próximo resumo da manhã ou lembrete enviado, e aparece no app.
 - **Textos do app, da loja e do WhatsApp:** "agenda e lembretes no WhatsApp", com a IA descrita como forma de cadastrar.
 - **Estimativa de custo por usuário por mês:** até ~30 resumos e ~30 a 60 lembretes por template, nos dias em que a janela está fechada. O preço por mensagem de utilidade no Brasil deve ser confirmado na tabela da Meta antes do teste, e o painel interno mede o custo real.
@@ -120,11 +131,18 @@ Abordagem B, sem data de lançamento: publicar só quando cumprir o **critério 
 
 ### 6. Planos e pagamento
 - **Venda só na web** (aura-cronos.vercel.app). O app das lojas não mostra preços, botões nem links de compra; quem assinou na web usa normalmente.
-- **Como o mesmo código sabe que está dentro do app da loja:**
-  - O TWA abre com `start_url` `/?shell=play`; o app Capacitor abre com `/?shell=ios` e é identificado também por `Capacitor.isNativePlatform()`.
-  - No primeiro acesso, o app grava o cookie `aura_shell`.
-  - Com esse cookie, o servidor esconde a página `/planos`, os preços, os botões de assinar e os links de compra, e mostra só o plano atual da pessoa.
-- Antes de publicar, confirmar essa regra nas políticas atuais do Google Play e da Apple para o Brasil, e escolher o provedor depois disso.
+- **Como o mesmo código sabe que está dentro do app da loja (sem vazar para o navegador comum):**
+  - Android (TWA): o app abre com `start_url` `/?shell=play`; a página guarda `shell=play` em `sessionStorage`, que vale só naquela sessão do app, e confere também o referrer `android-app://`.
+  - iOS: `Capacitor.isNativePlatform()`.
+  - Nada disso usa cookie. No Chrome ou Safari comum do mesmo aparelho, `/planos`, os preços e a indicação continuam aparecendo.
+  - Dentro do app, essas telas e links ficam escondidos e aparece só o plano atual da pessoa.
+- **Regras de assinatura (decisão do fundador, 2026-10-26 19:49):**
+  - 14 dias grátis, com todos os recursos.
+  - Do 15º ao 20º dia sem assinatura: avisos para assinar.
+  - No 20º dia sem assinatura: WhatsApp e Google Agenda desconectados automaticamente, lembretes parados, dados guardados.
+  - Ao assinar: cobrança recorrente mensal automática no cartão de crédito cadastrado, até cancelar.
+  - O aceite dos Termos e da Política de Privacidade (LGPD) é obrigatório no cadastro e fica registrado com data e versão.
+  Estas regras substituem as menções a "7 dias grátis" e "Depois dos 7 dias sem assinar" abaixo e no restante do documento.
 - **Plano:** R$ 20 por mês, com 7 dias grátis no primeiro cadastro (referência: Toki Plus, R$ 20 por mês). Inclui 1 conta Google Agenda e todos os recursos do plano, sem cobranças extras no lançamento. Conta Google adicional paga fica para meses depois do lançamento.
 - **Depois dos 7 dias sem assinar:** os lembretes no WhatsApp param e o app mostra (só na web) como assinar; os dados ficam guardados.
 - **Provedor: Asaas**, no CNPJ do fundador. Atende tudo pedido num lugar só:
@@ -135,7 +153,7 @@ Abordagem B, sem data de lançamento: publicar só quando cumprir o **critério 
   - sandbox para testes;
   - webhooks para ativar e suspender o plano.
   Alternativa se o Asaas não aprovar a conta: Iugu.
-- Durante os testes, cobrança desligada.
+- **Durante o teste com 10 pessoas:** cobrança desligada e as contas dos testadores ficam com plano ativo, sem bloqueio de fim de teste grátis. Os 7 dias grátis só começam a contar para contas criadas a partir do lançamento.
 
 ### 7. Play Store
 - App web empacotado (TWA via Bubblewrap ou PWABuilder), com Digital Asset Links.
@@ -147,55 +165,92 @@ Abordagem B, sem data de lançamento: publicar só quando cumprir o **critério 
   - push nativo (APNs);
   - widget da agenda do dia;
   - extensão de compartilhar, para mandar um print ou foto de qualquer app direto para o Aura virar compromisso.
-- **Login por e-mail e senha.** Como não há login de terceiros, o "Iniciar sessão com a Apple" não é exigido; se um dia entrar login com Google, entra junto o da Apple.
+- **Login pelas formas da etapa 1** (código por WhatsApp ou Gmail, senha opcional). Como nenhuma é login de terceiros, o "Iniciar sessão com a Apple" não é exigido (diretriz 4.8); se um dia entrar login com Google, entra junto o da Apple.
+- **Links que abrem dentro do app:**
+  - Universal Links (iOS, `apple-app-site-association`) e App Links (Android, `assetlinks.json`) cobrindo `/auth/*`, `/google/*` e `/r/*`.
+  - O app recebe o token do link e troca pela sessão dentro dele.
+  - Como alternativa, sempre aparece o código de 6 dígitos para digitar no app.
+- **Conectar o Google no iOS:** o OAuth abre em `ASWebAuthenticationSession` (Safari), nunca dentro do WebView, porque o Google bloqueia (`disallowed_useragent`). O retorno ao app é pelo Universal Link `/google/*`.
 
 ### 9. Acréscimos aprovados na revisão de CEO (2026-10-26)
 Nome oficial do app: **Aura Cronos - Assistente Pessoal** (nome curto: Aura Cronos).
 
 **Plano único no lançamento (decisão do fundador, 2026-10-26 19:20):** todos os recursos deste plano, inclusive E1 a E6, estão incluídos na assinatura de R$ 20 por mês, sem cobranças extras. Recursos pagos à parte (como conta Google adicional) só entram meses depois do lançamento, como melhorias futuras. No lançamento, a assinatura cobre 1 conta Google; a cobrança por conta adicional fica para depois.
 
+**Onde cada item entra:** E1, E2 e E3 junto com as etapas 1 a 3; E4 junto com a etapa 2. Os quatro fazem parte do teste com 10 pessoas e do critério de lançamento. E6 é pós-lançamento.
+
 **E1. Cadastro e login pelo WhatsApp.**
-1. Número desconhecido manda qualquer mensagem ao Aura. O Aura responde com boas-vindas, uma linha sobre o que faz, e pede o Gmail.
-2. O Aura confere se termina em `@gmail.com` e manda um código de 6 dígitos para esse e-mail (OTP do Supabase). A pessoa digita o código no WhatsApp; isso prova que o Gmail é dela.
-3. Com o código certo, o Aura cria a conta já confirmada (`auth.admin.createUser`), liga o número ao perfil (`whatsapp_phone`), começa os 7 dias grátis e manda um link de acesso ao app sem senha (válido por 10 minutos).
-- **Login depois:** a pessoa manda "entrar" e recebe um novo link de acesso. Só o número ligado à conta recebe o link.
-- **Gmail que já tem conta:** depois do código, o Aura liga o número a essa conta em vez de criar outra.
-- **Limites:** 5 códigos por número por hora; código vale 10 minutos; 3 tentativas erradas invalidam o código.
-- **Interrupção:** se a pessoa sumir no meio, o estado do cadastro expira em 24 horas.
+1. Número desconhecido manda qualquer mensagem ao Aura. O Aura responde com boas-vindas, uma linha sobre o que faz, e pede o Gmail. Depois do lançamento do E6, também aceita um código de indicação opcional ("indicado por <código>").
+2. O Aura confere se o e-mail termina em `@gmail.com`. Depois gera um código de 6 dígitos **no próprio backend**:
+   - guardado só como hash, com validade de 10 minutos e no máximo 3 tentativas erradas;
+   - enviado ao Gmail por SMTP próprio (Resend ou Amazon SES).
+   A pessoa digita o código no WhatsApp, o que prova que o Gmail é dela.
+3. Com o código certo:
+   - o Aura cria a conta já confirmada (`auth.admin.createUser`), liga o número ao perfil (`whatsapp_phone`) e começa os 7 dias grátis;
+   - manda o link de conexão com o Google Agenda e um link de acesso ao app (`auth.admin.generateLink`; a validade segue a do OTP do projeto no Supabase, configurada em 10 minutos), com o código de 6 dígitos como alternativa.
+- **Login depois:** a pessoa manda "entrar" e recebe um link e um código novos. Só o número ligado à conta recebe.
+- **Recuperação (trocou ou perdeu o número):** no site ou no app, "entrar com código no Gmail". Dentro da conta, a pessoa religa o novo número em Ajustes → WhatsApp.
+- **Gmail que já tem conta ligada a outro número:** depois do código, o Aura liga o novo número a essa conta e avisa o número antigo ("seu Aura foi ligado a outro número; se não foi você, entre pelo Gmail e desconecte").
+- **Número que já tem conta tentando um segundo Gmail:** recusado ("este número já está ligado a <gm***@gmail.com>; para trocar, desconecte em Ajustes").
+- **Durante o teste fechado:** Gmail fora da lista recebe "o Aura está em teste fechado; você entrou na lista de espera e avisaremos aqui". O número e o Gmail vão para a tabela `waitlist`. No teste, a lista é conferida antes de mandar o código, para não gastar e-mail com quem não vai entrar.
+- **Limites contra abuso:**
+  - 5 códigos por número por hora;
+  - 3 códigos por Gmail de destino por dia;
+  - limite global de 200 códigos por hora com alerta.
+- **Interrupção:** o estado do cadastro expira em 24 horas.
 
 **E2. Mensagem encaminhada vira compromisso.**
-- Mensagens marcadas como encaminhadas (`context.forwarded`), cartões de contato e localização vão para o assistente com o rótulo "mensagem encaminhada pelo usuário".
-- O assistente cria o compromisso no Google Agenda. Se faltar data ou hora, pergunta antes.
+- Vale para texto, imagem e áudio com `context.forwarded`. Cartões de contato e localização ficam de fora.
+- O assistente lê, monta o compromisso e mostra um resumo com botões "Criar" e "Cancelar". Só cria depois do "Criar". A mensagem interativa é grátis, porque a janela está aberta.
+- Quem conectou o Google: o evento é criado no Google Agenda. Quem não conectou: fica só no Aura.
+- Se faltar data ou hora, pergunta antes.
 
 **E3. Lembrete com "Vou" / "Remarcar" / "Adiar 10 min".**
-- O template de lembrete leva três botões de resposta rápida.
 - "Vou" só confirma.
 - "Adiar 10 min" repete o lembrete 10 minutos depois, sem mudar o evento.
-- "Remarcar" pergunta "Para quando?". A próxima mensagem da pessoa (em até 2 horas) é lida pelo assistente com o ID do evento e muda o evento no Google Agenda (`update_event`). Depois disso, o Aura confirma a nova data.
+- "Remarcar" pergunta "Para quando?". A próxima mensagem da pessoa (em até 2 horas) é lida pelo assistente com o ID do evento, que muda o evento (`update_event`) e confirma a nova data. Regras:
+  - **Evento recorrente:** muda só aquela ocorrência.
+  - **Convite de outro organizador:** não edita (só mudaria a cópia da pessoa). Responde "este compromisso é de <organizador>; quer que eu mande uma mensagem pronta para pedir a remarcação?".
+  - **Resposta que não é data** (encaminhamento, "entrar", outro pedido): sai do modo remarcar e trata a mensagem normalmente.
 
 **E4. Resumo da semana.**
 - Domingo às 20h no fuso da pessoa: compromissos por dia e tarefas com prazo na semana.
 - Só sai se houver ao menos um item. Pode ser desligado em Ajustes.
-- Template de utilidade quando a janela estiver fechada.
+- Template `aura_resumo_semana`, com a mesma regra de reclassificação dos resumos (etapa 3).
 
-**E6. Indicação.**
+**E6. Indicação (pós-lançamento).**
 - Cada assinante tem um código e um link (`/r/<código>`, ou "indicado por <código>" no cadastro pelo WhatsApp).
-- **Recompensa:** quando a pessoa indicada completar 3 mensalidades pagas, as duas contas ganham 1 mês grátis. O crédito é aplicado como desconto na próxima cobrança no Asaas.
+- **Só vale para quem se cadastrou com o código.** Quem já tinha conta antes da indicação não entra.
+- **Recompensa:** quando a pessoa indicada completar 3 mensalidades pagas (contadas pelos webhooks de pagamento confirmado do Asaas), as duas contas ganham 1 mês grátis.
+- **Como o crédito é aplicado no Asaas:** o Aura exclui a próxima cobrança gerada pela assinatura, logo que ela é criada e antes do vencimento. Isso vale igual para cartão, Pix Automático e boleto.
+- **Quem indicou e está sem assinatura ativa:** o mês fica guardado como crédito e é usado na primeira cobrança quando a pessoa voltar a assinar.
+- **CPF:** coletado no checkout da web, que o Asaas já exige para criar o cliente. É usado na regra contra abuso.
 - **Regras contra abuso:**
   - não vale indicar a si mesmo (mesmo número, Gmail ou CPF);
   - no máximo 12 meses de crédito por ano por assinante;
   - estorno ou chargeback de uma das 3 mensalidades cancela a recompensa.
+- **Na loja:** a tela de indicação fica escondida dentro do app das lojas (detecção da etapa 6), porque fala de cobrança.
 
 **Correção encontrada na revisão: cadastro hoje é fechado por lista** (`src/app/login/actions.ts:36`).
 - Durante o teste, a lista fica com os 10 testadores.
 - No lançamento, a lista dá lugar à regra "qualquer @gmail.com", no site e no WhatsApp.
 
+### Sequência de construção (revisão de CEO, 0I)
+| Hora | O que o implementador precisa | Esforço humano / CC |
+|---|---|---|
+| 1 (base) | Migrations versionadas no repositório; tabelas `google_accounts` (tokens criptografados, sync token, canal), `events.google_event_id`, `wa_signup` (estado do cadastro E1), `wa_pending` (remarcar/criar com expiração), `waitlist`; flags por etapa | 1 dia / 30 min |
+| 2-3 (núcleo) | OAuth do Google com `state`; sincronização incremental e push; adaptador que faz `create/update/delete_event` escreverem no Google primeiro; E1 com código no backend | 4 dias / 3 h |
+| 4-5 (integração) | Templates na Meta; botões (E2/E3); resumos (dia/semana) no dispatch; Asaas (sandbox) e webhook; detecção de app da loja | 4 dias / 3 h |
+| 6+ (polimento e testes) | Exclusão de conta; testes de ponta a ponta do lembrete; painel de custo; TWA e Capacitor | 1 semana / 4 h |
+
+Esperas externas (não são engenharia): aprovação dos templates pela Meta (horas a dias), verificação do Google OAuth (semanas), aprovação da conta Asaas, D-U-N-S para a Apple, revisões das lojas.
+
 ### Critério de lançamento ("100% funcional")
 A produção na Play Store só acontece quando tudo abaixo estiver verdadeiro:
-- Etapas 1 a 7 prontas, incluindo exclusão de conta e verificação do Google aprovada.
+- Etapas 1 a 7 e os itens E1 a E4 da seção 9 prontos, incluindo exclusão de conta e verificação do Google aprovada. E6 (indicação) é pós-lançamento e não bloqueia.
 - Teste com 10 pessoas concluído com os limites dos Critérios de Sucesso atingidos.
-- Templates de lembrete, de resumo e de aviso de conexão caída aprovados pela Meta.
-- Dentro do app das lojas (cookie `aura_shell`), nenhuma tela mostra preço, botão ou link de compra.
+- Os 5 templates da tabela da etapa 3 aprovados pela Meta.
+- Dentro do app das lojas (detecção da etapa 6), nenhuma tela mostra preço, botão ou link de compra; no navegador comum do mesmo aparelho, os preços continuam aparecendo.
 - Nenhum bug que faça um lembrete não chegar, aberto há mais de 7 dias.
 
 ## Open Questions
@@ -205,7 +260,7 @@ A produção na Play Store só acontece quando tudo abaixo estiver verdadeiro:
 - Registro da marca "Aura Cronos" no INPI antes de investir em divulgação.
 
 ## Success Criteria
-Teste com 10 pessoas além do fundador, por 14 dias, depois das etapas 1 a 3:
+Teste com 10 pessoas além do fundador, por 14 dias, depois das etapas 1 a 4 e dos itens E1 a E4 (os testadores entram pelo cadastro do WhatsApp):
 - No D14, pelo menos 5 das 10 ainda recebendo lembretes e interagindo com o Aura no WhatsApp (respondendo ao resumo, a um lembrete ou criando algo) nos últimos 7 dias.
 - Custo de WhatsApp e IA abaixo de R$ 2 por usuário por mês, medido no painel interno.
 - Zero compromisso perdido relatado pelos testadores por falha do Aura Cronos.
@@ -219,13 +274,15 @@ Teste com 10 pessoas além do fundador, por 14 dias, depois das etapas 1 a 3:
 ## Dependencies
 - Projeto no Google Cloud com Calendar API e tela de consentimento OAuth; verificação dos escopos sensíveis (pode levar semanas).
 - Gemini pelo plano pago (sem treinamento com os dados) antes de processar dados do Google Agenda.
-- Templates de WhatsApp aprovados (lembrete, resumo da manhã e aviso de conexão caída).
+- Os 5 templates da tabela da etapa 3 aprovados pela Meta.
+- Domínio próprio (ex.: auracronos.com.br), comprado pelo fundador antes do teste: usado no SMTP, na verificação do Google OAuth, nos Universal Links e App Links e no site.
+- SMTP próprio para os códigos por e-mail (Resend ou Amazon SES), com o domínio verificado por DNS.
 - Conta no Asaas no CNPJ, com emissão de nota fiscal configurada.
 - Renomear o repositório Amorimer/aura-chronos para aura-cronos e o projeto na Vercel.
 - Contas de desenvolvedor Google Play e Apple.
 
 ## The Assignment
-Hoje, antes de qualquer código novo: escolha 10 pessoas pelo nome (5 que usam Google Agenda no dia a dia e 5 autônomos com horário marcado) e pergunte se toparem testar o Aura Cronos no WhatsApp por 14 dias quando a conexão com o Google Agenda ficar pronta. Anote numa planilha o nome, o perfil e a resposta. Ninguém além de você usa o app até o Gemini pago e a exclusão de conta estarem prontos (etapa 4); a lista de quem topou fica pronta para começar no dia em que as etapas 1 a 4 estiverem no ar.
+Hoje, antes de qualquer código novo: escolha 10 pessoas pelo nome (5 que usam Google Agenda no dia a dia e 5 autônomos com horário marcado) e pergunte se toparem testar o Aura Cronos no WhatsApp por 14 dias quando a conexão com o Google Agenda ficar pronta. Anote numa planilha o nome, o perfil e a resposta. Ninguém além de você usa o app até o Gemini pago e a exclusão de conta estarem prontos (etapa 4); a lista de quem topou fica pronta para começar no dia em que as etapas 1 a 4 e os itens E1 a E4 estiverem no ar.
 
 ## What I noticed about how you think
 - Você descreveu o produto pelo resultado, não pela tecnologia: "com esses alertas no WhatsApp, eu não perco mais nenhum compromisso."
