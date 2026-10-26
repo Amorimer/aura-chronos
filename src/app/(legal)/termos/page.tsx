@@ -24,17 +24,19 @@ export default function Termos() {
       <h2>3. Teste grátis</h2>
       <ul>
         <li>Toda conta nova tem 14 dias grátis, com todos os recursos.</li>
-        <li>Do 15º ao 20º dia sem assinatura, você recebe avisos para assinar.</li>
-        <li>No 20º dia sem assinatura, o WhatsApp e o Google Agenda são desconectados automaticamente e os lembretes param. Seus dados continuam guardados até você assinar ou excluir a conta.</li>
+        <li>Do 15º ao 20º dia sem assinatura, você recebe um aviso por dia com a contagem regressiva de quantos dias faltam para o acesso ser interrompido.</li>
+        <li>No 20º dia sem assinatura, o WhatsApp e o Google Agenda são desconectados automaticamente e os lembretes param.</li>
+        <li>Depois de 60 dias sem uso da plataforma, a conta e os dados são apagados automaticamente.</li>
       </ul>
 
       <h2>4. Assinatura e cobrança</h2>
       <ul>
         <li>Plano único de R$ 20,00 por mês, com todos os recursos incluídos.</li>
         <li>Ao assinar, a cobrança é recorrente: todo mês o valor é cobrado automaticamente no cartão de crédito cadastrado, até você cancelar.</li>
+        <li>Se você assinar pelo Google Play ou pela App Store, a cobrança e o cancelamento seguem as regras da loja.</li>
         <li>Você pode cancelar a qualquer momento em Ajustes, sem multa. O acesso continua até o fim do mês já pago.</li>
         <li>Pelo direito de arrependimento (art. 49 do Código de Defesa do Consumidor), você pode desistir em até 7 dias após a primeira cobrança e receber o valor de volta.</li>
-        <li>Se uma cobrança falhar, avisamos e tentamos de novo; sem pagamento, a conta volta ao estado do item 3 (integrações desconectadas, dados guardados).</li>
+        <li>Se uma cobrança falhar, avisamos e tentamos de novo; sem pagamento, a conta volta ao estado do item 3 (integrações desconectadas e, após 60 dias sem uso, dados apagados).</li>
         <li>Mudanças de preço são avisadas com pelo menos 30 dias de antecedência.</li>
       </ul>
 

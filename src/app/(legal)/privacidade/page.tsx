@@ -69,7 +69,7 @@ export default function Privacidade() {
       <h2>7. Por quanto tempo guardamos</h2>
       <ul>
         <li><b>Áudios, fotos e PDFs</b> enviados ao assistente: só processados, não ficam guardados. No histórico fica apenas a indicação “[áudio enviado]” ou “[imagem enviada]”.</li>
-        <li><b>Agenda, tarefas, notas e histórico de conversa:</b> enquanto a conta existir.</li>
+        <li><b>Agenda, tarefas, notas e histórico de conversa:</b> enquanto a conta estiver em uso. Depois de 60 dias sem uso da plataforma, a conta e esses dados são apagados automaticamente.</li>
         <li><b>Cópia dos eventos do Google Agenda:</b> só de 1 dia atrás até 90 dias à frente, renovada pela sincronização.</li>
         <li><b>Dados de cobrança e notas fiscais:</b> pelo prazo exigido pela legislação fiscal (até 5 anos).</li>
         <li><b>Registros de acesso:</b> 6 meses (Marco Civil da Internet).</li>

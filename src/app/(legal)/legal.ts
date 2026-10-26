@@ -1,8 +1,8 @@
-// Company data shown in the privacy policy and terms. Fill in the CNPJ data before launch.
+// Company data shown in the privacy policy and terms.
 export const CONTROLLER = {
-  name: process.env.NEXT_PUBLIC_COMPANY_NAME || "[RAZÃO SOCIAL]",
-  cnpj: process.env.NEXT_PUBLIC_COMPANY_CNPJ || "[CNPJ]",
-  dpo: process.env.NEXT_PUBLIC_COMPANY_DPO || "[NOME DO ENCARREGADO]",
+  name: process.env.NEXT_PUBLIC_COMPANY_NAME || "Amorímer",
+  cnpj: process.env.NEXT_PUBLIC_COMPANY_CNPJ || "45.326.269/0001-09",
+  dpo: process.env.NEXT_PUBLIC_COMPANY_DPO || "Amorímer",
   email: process.env.NEXT_PUBLIC_PRIVACY_EMAIL || "amorimer.designer@gmail.com",
 };
 

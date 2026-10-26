@@ -130,7 +130,8 @@ Abordagem B, sem data de lançamento: publicar só quando cumprir o **critério 
 - Durante o teste com 10 pessoas, o app OAuth fica publicado como "Em produção" sem verificação (até 100 usuários, com a tela de aviso de app não verificado), para que o acesso não expire em 7 dias como no modo de teste.
 
 ### 6. Planos e pagamento
-- **Venda só na web** (aura-cronos.vercel.app). O app das lojas não mostra preços, botões nem links de compra; quem assinou na web usa normalmente.
+- **Venda em três lugares (D19, revisão de CEO):** na web pelo Asaas (cartão recorrente), no Android pelo Google Play Billing e no iOS pela compra no app da Apple. As compras pelas lojas pagam a taxa da loja (15% a 30%). A assinatura vale em qualquer lugar; o servidor guarda a origem (`asaas`, `google_play`, `apple`) e confere a validade com cada provedor.
+- *(Substituído pelo D19: o texto abaixo sobre esconder preços no app vale só até as compras pelas lojas estarem prontas.)*
 - **Como o mesmo código sabe que está dentro do app da loja (sem vazar para o navegador comum):**
   - Android (TWA): o app abre com `start_url` `/?shell=play`; a página guarda `shell=play` em `sessionStorage`, que vale só naquela sessão do app, e confere também o referrer `android-app://`.
   - iOS: `Capacitor.isNativePlatform()`.
@@ -450,3 +451,156 @@ issues verified: 4 of 4
 
 Verification is deterministic: a fix counts when its `applied_text` is in the current design and absent from the round-2 snapshot. It confirms applied edits, never a review verdict; no reviewer was launched past the cap.
 <!-- gstack:office-hours:concerns:end -->
+
+## CEO Review (2026-10-26)
+
+Modo: SCOPE EXPANSION (escolha do fundador, D2). Revisão completa até implementação; nenhuma linha de código mudou por causa desta revisão.
+
+### Decisões (ledger)
+| ID | Decisão | Resposta | Escopo aprovado |
+|---|---|---|---|
+| D3 E1 | Cadastro e login pelo WhatsApp | A) Adicionar | seção 9 |
+| D4 E2 | Encaminhar vira compromisso | A) Adicionar | seção 9 |
+| D5 E3 | Vou / Remarcar / Adiar | A) Adicionar | seção 9 |
+| D6 E4 | Resumo da semana | A) Adicionar | seção 9 |
+| D7 E5 | Aviso de deslocamento | C) Pular | NOT in scope |
+| D8 E6 | Indicação | Adicionar com regra de 3 mensalidades | seção 9, pós-lançamento |
+| D9 | Documentos do CEO | A) Aprovar | plano e resumo |
+| D10 S1-01 | Autenticar `/api/google/push` (token do canal), `/api/asaas/webhook` (token de acesso) e OAuth (`state`) | A | recusar com 401 e registrar |
+| D11 S2-01 | Lembrete que falha no WhatsApp | A) Reserva + alerta | ver correção OV-03 abaixo |
+| D12 S3-01 | Confirmação para apagar ou mudar em lote pelo WhatsApp | A | ver correção OV-09 |
+| D13 S4-01 | Fila por usuário + idempotência de botões | A | ver correção OV-04 |
+| D14 S6-01 | Testes completos + CI | A | tabela da seção 6 |
+| D15 S8-01 | Sentry + painel + alertas | A | — |
+| D16 S9-01 | Ambiente de teste separado + migrations versionadas | A | ver correções OV-07/08 |
+| D17 S9-02 | Chaves por recurso (`app_flags`) | A | ver correção OV-15 |
+| D18 OV-06 | Teste com 10 pessoas mais cedo | A | teste começa com leitura do Google, lembretes, resumo do dia e Vou/Adiar, entrada pela lista atual; o lançamento continua exigindo tudo |
+| D19 OV-11 | Compra também pelas lojas | A | Google Play Billing + Apple IAP + Asaas na web |
+| D20 OV-12 | Google obrigatório no cadastro? | B) Continua opcional | testes cobrem os dois tipos de conta |
+| Fundador 19:20 | Plano único, tudo incluído no lançamento | instrução | seção 9 |
+| Fundador 19:49 | 14 dias grátis; dia 20 desconecta; cartão recorrente; aceite LGPD | instrução | seção 6 |
+| Fundador 20:09 | Dados apagados após 60 dias sem uso; avisos diários com contagem regressiva do 15º ao 20º dia; controlador Amorímer, CNPJ 45.326.269/0001-09 | instrução | Termos, Política e seção 6 |
+
+Approval readiness: PASS (D3-D20 e instruções do fundador acima; nenhuma mudança sem resposta).
+
+### Correções de implementação vindas da segunda opinião (sem mudar o que foi aprovado)
+- **OV-01 Sessão de serviço:** `clientAsUser` (src/lib/supabase/admin.ts:21) para de gerar magic link a cada mensagem. O agente do WhatsApp passa a usar uma sessão de serviço própria (cliente admin com filtro explícito por `user_id` em toda consulta, ou JWT curto assinado). O login do E1 usa token próprio de uso único em tabela (`login_tokens`, hash, validade, usado_em).
+- **OV-02 Preview de link:** links de login abrem uma página intermediária com botão "Entrar" (troca por POST); mensagens com link de login vão com `preview_url: false`.
+- **OV-03 Rastrear entrega (base do D11):**
+  - Nova tabela `wa_sends` (`reminder_id`, `wamid`, `status`, `error_code`), e o webhook passa a tratar `statuses`.
+  - Falha (`failed`) gera a reserva: web push se houver inscrição, senão e-mail para o Gmail.
+  - O cron deixa de mandar web push e WhatsApp ao mesmo tempo para quem tem WhatsApp ligado.
+  - "Zero compromisso perdido" passa a ser medido por `wa_sends`.
+- **OV-04 Inbox durável (base do D13):** o webhook grava cada mensagem em `wa_inbox` antes de responder 200. Um processador pega por usuário com lock (`FOR UPDATE SKIP LOCKED`), em ordem, e reprocessa o que ficou preso por mais de 2 minutos.
+- **OV-05 Payload dos botões:** cada template leva payload por botão (`reminder_id`/nonce); o webhook lê `button.payload` e `interactive.button_reply.id`; `sendWhatsAppNotice` passa a aceitar os 5 templates por nome.
+- **OV-07 Baseline do schema:** antes da hora 1, dump do schema de produção (funções em `private`, triggers, jobs do pg_cron, RPCs, RLS) para `supabase/migrations/0000_baseline.sql`, e prova de que recria um banco funcional.
+- **OV-08 Previews:** app Meta de teste com URL fixa (alias de branch), URLs estáveis para Google e Asaas, bypass da Deployment Protection para webhooks, e checks obrigatórios do GitHub antes do deploy de produção.
+- **OV-09 Conteúdo de terceiros:** mensagem encaminhada, imagem e PDF rodam só com ferramentas de criação, sempre atrás do botão "Criar", sem `remember`, sem editar e sem apagar.
+- **OV-10 Exclusão de conta:** cancela a assinatura no Asaas (ou orienta o cancelamento na loja) e mantém só o exigido por lei fiscal (CPF e notas, até 5 anos).
+- **OV-13 Lembretes vencidos e confirmação de envio:** lembrete cujo horário já passou há até 10 minutos sai na hora, mais antigo que isso é descartado com registro. O dispatch só marca como enviado depois de a rota confirmar (verificar `private.dispatch` e `pg_net`).
+- **OV-14 Telefone normalizado:** todas as regras do E1 e os limites comparam o número normalizado (9º dígito).
+- **OV-15 Chaves:** "flags por etapa" e `app_flags` são a mesma tabela, lida pelo Postgres (dispatch) e pelo Next.
+- **OV-16 (observabilidade cara):** mantida a decisão D15; a tabela `wa_sends` (OV-03) é a primeira métrica do painel.
+
+### Error & Rescue Registry
+| Caminho | Falha | Tratamento | Pessoa vê | Teste |
+|---|---|---|---|---|
+| Envio de lembrete | template rejeitado, 131026/131049, limite | `wa_sends.failed` → reserva por push ou e-mail + alerta acima de 2%/h | aviso por outro canal | integração |
+| Inbox do WhatsApp | função morre no meio | reprocessamento após 2 min | resposta atrasada, nunca perdida | integração |
+| Agente (Gemini) | 429, vazio, recusa, ferramenta com erro | 1 nova tentativa; depois "Tive um problema, pode mandar de novo?" + Sentry | mensagem clara | unidade |
+| Google sync | 401, 410, 429 | 401 → conexão caída + `aura_conexao_google`; 410 → ressync; 429 → backoff | aviso para reconectar | integração |
+| Código E1 | e-mail não entregue | botão "reenviar código" após 60 s; erro do SMTP no Sentry | instrução clara | unidade |
+| Webhook Asaas/Google | chamada falsa, evento repetido | 401; idempotência por ID do evento | — | integração |
+| Exclusão de conta | falha ao cancelar no Asaas | não apaga até cancelar; alerta | "não foi possível concluir, tente de novo" | integração |
+
+### Failure Modes Registry
+| Caminho | Modo de falha | Tratado? | Teste? | Pessoa vê? | Registrado? |
+|---|---|---|---|---|---|
+| Lembrete WhatsApp | falha de entrega | S (OV-03) | S | reserva | S |
+| Mensagem recebida | perdida por timeout | S (OV-04) | S | atraso | S |
+| Login E1 | link consumido pelo preview | S (OV-02) | S | página "Entrar" | S |
+| Botão tocado 2x | duplicata | S (D13) | S | uma vez só | S |
+| Prompt injection por encaminhada | apagar/editar | S (OV-09, D12) | S | botão Criar/Confirmar | S |
+
+Nenhum CRITICAL GAP restante após as correções.
+
+### NOT in scope
+- E5 Aviso de deslocamento: pulado pelo fundador (D7), custo de mapas e localização.
+- Lembrar clientes dos autônomos: produto separado (office-hours).
+
+### What already exists
+- Assistente com ferramentas (`src/lib/agent-tools.ts`), webhook do WhatsApp com assinatura, dispatch por pg_cron, feed ICS, páginas legais, normalização do 9º dígito no envio. Tudo reaproveitado.
+
+### Dream state delta
+Depois deste plano: o Aura está nas lojas, com Google Agenda, cadastro e uso inteiro pelo WhatsApp, cobrança recorrente e operação observável. Faltará para o ideal de 12 meses: mais contas Google pagas, indicação em escala e o produto de lembrete de clientes.
+
+### Implementation Tasks
+- [ ] **T1 (P1, human: ~1d / CC: ~30min)** — banco — Baseline do schema e migrations versionadas (OV-07, D16). Verify: banco novo criado só pelas migrations roda o dispatch.
+- [ ] **T2 (P1, human: ~1d / CC: ~45min)** — infra — Ambiente de teste (Supabase, app Meta de teste, sandbox Asaas, URLs fixas) e `app_flags` (D16, D17, OV-08, OV-15). Verify: prévia não envia para números reais.
+- [ ] **T3 (P1, human: ~1d / CC: ~30min)** — WhatsApp — Sessão de serviço sem magic link (OV-01). Verify: duas mensagens seguidas não invalidam login.
+- [ ] **T4 (P1, human: ~2d / CC: ~1h)** — WhatsApp — Inbox durável, fila por usuário, payload de botões, idempotência (D13, OV-04, OV-05). Verify: teste com duas mensagens simultâneas e toque duplo.
+- [ ] **T5 (P1, human: ~1d / CC: ~45min)** — lembretes — `wa_sends`, `statuses`, reserva e alerta (D11, OV-03, OV-13). Verify: falha simulada gera reserva e alerta.
+- [ ] **T6 (P1, human: ~3d / CC: ~2h)** — Google — OAuth com `state`, sincronização com push autenticado, lembretes do Google (D10, etapa 1). Verify: evento criado no Google gera 1 lembrete no horário.
+- [ ] **T7 (P1, human: ~2d / CC: ~1h)** — WhatsApp — Templates (5) e resumo do dia com Vou/Adiar; marco do teste com 10 pessoas (D18). Verify: teste de ponta a ponta.
+- [ ] **T8 (P1, human: ~1 sem / CC: ~3h)** — testes — Vitest, Playwright e CI bloqueando deploy (D14). Verify: CI vermelho impede deploy.
+- [ ] **T9 (P1, human: ~2d / CC: ~1h)** — operação — Sentry, painel e alertas (D15). Verify: erro forçado aparece no Sentry e dispara alerta.
+- [ ] **T10 (P1, human: ~3d / CC: ~2h)** — WhatsApp — E1 com token próprio, página "Entrar", SMTP e domínio (OV-02). Verify: cadastro completo pelo WhatsApp em menos de 2 minutos.
+- [ ] **T11 (P1, human: ~1d / CC: ~45min)** — WhatsApp — E2/E3/E4 com ferramentas restritas para conteúdo de terceiros e confirmação (D12, OV-09). Verify: texto malicioso encaminhado não apaga nada.
+- [ ] **T12 (P1, human: ~3d / CC: ~2h)** — cobrança — Asaas (cartão recorrente), 14 dias grátis, contagem regressiva diária do 15º ao 20º dia, desconexão no 20º dia, exclusão após 60 dias sem uso. Verify: conta de teste percorre os 20 dias no relógio simulado.
+- [ ] **T13 (P1, human: ~1d / CC: ~45min)** — LGPD — Exclusão de conta com cancelamento no Asaas e retenção fiscal (OV-10). Verify: conta excluída some e a cobrança para.
+- [ ] **T14 (P2, human: ~1 sem / CC: ~3h)** — lojas — TWA + Google Play Billing; Capacitor + Apple IAP; Universal/App Links (D19). Verify: assinatura comprada na loja ativa o plano.
+- [ ] **T15 (P3, human: ~3d / CC: ~1h30)** — crescimento — E6 indicação pós-lançamento. Verify: indicado com 3 pagamentos gera 2 créditos.
+
+### Completion Summary
+```
++====================================================================+
+|            MEGA PLAN REVIEW — COMPLETION SUMMARY                   |
++====================================================================+
+| Mode selected        | SCOPE EXPANSION                             |
+| System Audit         | sem testes, sem migrations no repo, cadastro|
+|                      | por lista, lembrete fora de 24h sem template|
+| Step 0               | 6 propostas: 5 aceitas, 1 pulada            |
+| Section 1  (Arch)    | 2 issues found                              |
+| Section 2  (Errors)  | 5 error paths mapped, 1 GAP (resolvido)     |
+| Section 3  (Security)| 2 issues found, 2 High severity             |
+| Section 4  (Data/UX) | 3 edge cases mapped, 2 unhandled (resolvidos)|
+| Section 5  (Quality) | 2 issues found                              |
+| Section 6  (Tests)   | Diagram produced, 1 gap (resolvido)         |
+| Section 7  (Perf)    | 1 issue found (índices)                     |
+| Section 8  (Observ)  | 1 gap found (resolvido)                     |
+| Section 9  (Deploy)  | 2 risks flagged (resolvidos)                |
+| Section 10 (Future)  | Reversibility: 3/5, debt items: 3           |
+| Section 11 (Design)  | 4 estados faltando; rodar /plan-design-review|
++--------------------------------------------------------------------+
+| NOT in scope         | written (2 items)                           |
+| What already exists  | written                                     |
+| Dream state delta    | written                                     |
+| Error/rescue registry| 7 rows, 0 CRITICAL GAPS                     |
+| Failure modes        | 5 total, 0 CRITICAL GAPS                    |
+| TODOS.md updates     | 0 items proposed                            |
+| Scope proposals      | 6 proposed, 5 accepted (EXP)                |
+| CEO plan             | written                                     |
+| Outside voice        | codex not installed; native subagent        |
+|                      | completed (16 findings, not outside coverage)|
+| Lake Score           | 8/8 recommendations chose complete option   |
+| Diagrams produced    | 3 (arquitetura, fluxo de telas, sequência)  |
+| Stale diagrams found | 0                                           |
+| Unresolved decisions | 0                                           |
+| Reality rows         | 7/7 rows, 2 unverified                      |
++====================================================================+
+```
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 1 | CLEAR | 6 proposals, 5 accepted, 0 deferred |
+| Outside Review | native Claude subagent (codex not installed) | Independent 2nd opinion | 1 | unavailable (native fallback completed) | 16 findings (native); 16 resolved; 0 unresolved; no completed external review |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | — | — |
+| Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | — |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
+
+- **OUTSIDE COVERAGE:** codex, plan-review, unavailable (CLI not installed); native Claude subagent fallback completed with 16 findings, all integrated or decided (D18-D20). Not counted as outside coverage.
+- **VERDICT:** CEO CLEARED — eng review required.
+
+NO UNRESOLVED DECISIONS
