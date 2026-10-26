@@ -5,6 +5,7 @@ import { DefaultChatTransport, type FileUIPart, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import { ToolPart } from "./tool-cards";
 import { imageToDataUrl, toWavDataUrl } from "@/lib/media";
+import { boldRuns } from "@/lib/rich-text";
 import { IconImage, IconMic, IconSend, IconStop, IconX } from "./icons";
 
 const SUGGESTIONS = [
@@ -150,7 +151,7 @@ export function Chat({ initialMessages, assistantName, userName }: { initialMess
                     <div key={i}
                       className={`max-w-[85%] whitespace-pre-wrap break-words text-[15px] leading-[22px] px-4 py-2.5 rounded-2xl ${
                         m.role === "user" ? "bg-bubble-user text-on-bubble-user rounded-br-md" : "bg-surface border border-line rounded-bl-md"}`}>
-                      {p.text}
+                      {boldRuns(p.text).map((r, j) => (r.bold ? <strong key={j} className="font-semibold">{r.text}</strong> : r.text))}
                     </div>
                   );
                 }

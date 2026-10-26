@@ -1,4 +1,5 @@
 // WhatsApp Cloud API (official, by Meta). One business number sends to each user who linked their own WhatsApp.
+import { toWhatsApp } from "./rich-text";
 // Inside the 24h customer-service window a free-form text goes out; outside it Meta only accepts an approved template.
 
 const API = `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION || "v23.0"}`;
@@ -47,7 +48,7 @@ export async function downloadMedia(mediaId: string): Promise<{ data: Uint8Array
 }
 
 export async function sendWhatsAppText(to: string, text: string) {
-  return post({ to, type: "text", text: { body: text.slice(0, 4000), preview_url: true } });
+  return post({ to, type: "text", text: { body: toWhatsApp(text).slice(0, 4000), preview_url: true } });
 }
 
 export async function sendWhatsAppTemplate(to: string, name: string, lang: string) {
