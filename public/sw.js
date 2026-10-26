@@ -1,5 +1,5 @@
 // Aura Cronos service worker: push notifications and an offline fallback for navigations.
-const CACHE = "aura-v2";
+const CACHE = "aura-v3";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/offline.html"])).then(() => self.skipWaiting()));
