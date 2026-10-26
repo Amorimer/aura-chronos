@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { PRIVACY_VERSION, TERMS_VERSION } from "../(legal)/legal";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,12 +25,17 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get("email") ?? "").trim();
   const password = String(form.get("password") ?? "");
   if (!email || password.length < 8) return { error: "Use um e-mail válido e uma senha com pelo menos 8 caracteres." };
+  if (form.get("accept") !== "on") return { error: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade." };
   const h = await headers();
   const origin = h.get("origin") ?? `https://${h.get("host")}`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email, password,
-    options: { data: { display_name: name || undefined }, emailRedirectTo: `${origin}/auth/confirm` },
+    options: {
+      // LGPD: record when and which versions were accepted.
+      data: { display_name: name || undefined, terms_accepted_at: new Date().toISOString(), terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION },
+      emailRedirectTo: `${origin}/auth/confirm`,
+    },
   });
   if (error) {
     if (/rate/i.test(error.message)) return { error: "Muitos cadastros seguidos. Espere alguns minutos e tente de novo." };

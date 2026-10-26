@@ -51,6 +51,16 @@ export default function LoginPage() {
             autoComplete={mode === "in" ? "current-password" : "new-password"}
             className="h-12 px-4 rounded-xl bg-surface border border-line-input" />
         </label>
+        {mode === "up" && (
+          <label className="flex items-start gap-3 text-sm leading-5">
+            <input name="accept" type="checkbox" required className="mt-0.5 w-5 h-5 shrink-0 accent-[var(--accent)]" />
+            <span>
+              Li e aceito os <a href="/termos" target="_blank" className="underline font-medium">Termos de Uso</a> e a{" "}
+              <a href="/privacidade" target="_blank" className="underline font-medium">Política de Privacidade</a>, e autorizo o
+              tratamento dos meus dados conforme a LGPD.
+            </span>
+          </label>
+        )}
         {(state.error || (linkError && !state.info)) && (
           <p role="alert" className="text-sm text-danger bg-danger-soft rounded-xl px-4 py-3">
             {state.error ?? "O link expirou ou já foi usado. Entre com e-mail e senha."}
