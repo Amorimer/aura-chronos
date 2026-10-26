@@ -52,19 +52,23 @@ export function buildTools(ctx: Ctx) {
   const { supabase, tz } = ctx;
   return {
     list_agenda: tool({
-      description: "Lista compromissos (já expandindo repetições) e tarefas com prazo entre duas datas locais. Use para responder 'como está meu dia/semana', checar horários livres, ou achar um evento para editar.",
+      description: "Lista compromissos (já expandindo repetições) e tarefas com prazo entre duas datas locais. Use para responder 'como está meu dia/semana', checar horários livres, ou achar um evento para editar. Por padrão só devolve o que ainda não passou.",
       inputSchema: z.object({
         from_date: z.string().describe("YYYY-MM-DD local, inclusivo"),
         to_date: z.string().describe("YYYY-MM-DD local, inclusivo"),
+        include_past: z.boolean().nullish().describe("true só quando o usuário pedir explicitamente algo do passado (ontem, semana passada, o que já fiz)."),
       }),
-      execute: async ({ from_date, to_date }) => {
-        const { from } = dayRange(from_date, tz);
+      execute: async ({ from_date, to_date, include_past }) => {
+        const now = new Date();
+        let { from } = dayRange(from_date, tz);
         const { to } = dayRange(to_date, tz);
+        if (!include_past && from < now) from = now;
+        if (to <= from) return { events: [], tasks_due: [], note: "Esse período já passou. Nada a mostrar sem pedido explícito do passado." };
         const occ = await occurrencesBetween(supabase, from, to, tz);
         const { data: tasks } = await supabase.from("tasks").select("*").is("done_at", null)
           .gte("due_at", from.toISOString()).lt("due_at", to.toISOString()).order("due_at");
         return {
-          events: occ.map((o) => ({
+          events: occ.filter((o) => include_past || new Date(o.occurrence_end) > now).map((o) => ({
             ...present({ ...o, start_at: o.occurrence_start, end_at: o.occurrence_end }, tz),
           })),
           tasks_due: (tasks as TaskRow[] | null ?? []).map((t) => presentTask(t, tz)),
@@ -73,11 +77,15 @@ export function buildTools(ctx: Ctx) {
     }),
 
     find_events: tool({
-      description: "Procura eventos pelo título (texto parcial). Retorna id para editar ou excluir.",
-      inputSchema: z.object({ query: z.string() }),
-      execute: async ({ query }) => {
-        const { data, error } = await supabase.from("events").select("*")
-          .ilike("title", `%${query.replace(/[%_]/g, "")}%`).order("start_at", { ascending: false }).limit(15);
+      description: "Procura eventos pelo título (texto parcial). Retorna id para editar ou excluir. Por padrão só eventos futuros ou que se repetem.",
+      inputSchema: z.object({
+        query: z.string(),
+        include_past: z.boolean().nullish().describe("true só quando o usuário falar de um evento que já aconteceu."),
+      }),
+      execute: async ({ query, include_past }) => {
+        let q = supabase.from("events").select("*").ilike("title", `%${query.replace(/[%_]/g, "")}%`);
+        if (!include_past) q = q.or(`end_at.gte.${new Date().toISOString()},recurrence.not.is.null`);
+        const { data, error } = await q.order("start_at", { ascending: !include_past }).limit(15);
         if (error) return { error: error.message };
         return { events: (data as EventRow[]).map((e) => present(e, tz)) };
       },
