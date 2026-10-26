@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { NoteRow } from "@/lib/types";
 import { fieldCls, Sheet } from "./sheet";
@@ -11,6 +11,13 @@ export function Notes() {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<NoteRow | "new" | null>(null);
+  // Typed but not saved: closing the sheet would lose it, so ask first.
+  const dirty = useRef(false);
+  function close() {
+    if (dirty.current && !confirm("Descartar o que você escreveu?")) return;
+    dirty.current = false;
+    setOpen(null);
+  }
 
   const load = useCallback(async () => {
     const { data } = await createClient().from("notes").select("*").order("updated_at", { ascending: false }).limit(200);
@@ -59,14 +66,14 @@ export function Notes() {
       </div>
       <button onClick={() => setOpen("new")} aria-label="Nova nota"
         className="fixed right-5 bottom-[calc(80px+env(safe-area-inset-bottom))] z-20 w-14 h-14 rounded-full bg-accent text-on-accent shadow-lg grid place-items-center"><IconPlus size={26} /></button>
-      <Sheet open={!!open} onClose={() => setOpen(null)} title={open === "new" ? "Nova nota" : "Nota"}>
-        {open && <NoteForm key={open === "new" ? "new" : open.id} note={open === "new" ? null : open} onDone={() => { setOpen(null); load(); if (window.location.search) window.history.replaceState(null, "", "/notas"); }} />}
+      <Sheet open={!!open} onClose={close} title={open === "new" ? "Nova nota" : "Nota"}>
+        {open && <NoteForm key={open === "new" ? "new" : open.id} note={open === "new" ? null : open} onDirty={() => { dirty.current = true; }} onDone={() => { dirty.current = false; setOpen(null); load(); if (window.location.search) window.history.replaceState(null, "", "/notas"); }} />}
       </Sheet>
     </div>
   );
 }
 
-function NoteForm({ note, onDone }: { note: NoteRow | null; onDone: () => void }) {
+function NoteForm({ note, onDone, onDirty }: { note: NoteRow | null; onDone: () => void; onDirty: () => void }) {
   const [title, setTitle] = useState(note?.title ?? "");
   const [body, setBody] = useState(note?.body ?? "");
   const [busy, setBusy] = useState(false);
@@ -88,9 +95,9 @@ function NoteForm({ note, onDone }: { note: NoteRow | null; onDone: () => void }
   return (
     <form onSubmit={save} className="flex flex-col gap-3">
       <label className="sr-only" htmlFor="nt">Título</label>
-      <input id="nt" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título" className={`${fieldCls} font-semibold`} />
+      <input id="nt" value={title} onChange={(e) => { setTitle(e.target.value); onDirty(); }} placeholder="Título" className={`${fieldCls} font-semibold`} />
       <label className="sr-only" htmlFor="nb">Conteúdo</label>
-      <textarea id="nb" value={body} onChange={(e) => setBody(e.target.value)} rows={10} placeholder="Escreva aqui…" className={`${fieldCls} h-auto py-3 leading-6`} autoFocus={!note} />
+      <textarea id="nb" value={body} onChange={(e) => { setBody(e.target.value); onDirty(); }} rows={10} placeholder="Escreva aqui…" className={`${fieldCls} h-auto py-3 leading-6`} autoFocus={!note} />
       <div className="flex gap-3 pt-1">
         {note && <button type="button" onClick={remove} className="h-12 px-5 rounded-full border border-line text-danger font-semibold">Excluir</button>}
         <button disabled={busy} className="flex-1 h-12 rounded-full bg-accent text-on-accent font-semibold disabled:opacity-60">{busy ? "Salvando…" : "Salvar"}</button>
