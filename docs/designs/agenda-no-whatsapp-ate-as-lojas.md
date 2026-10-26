@@ -537,7 +537,7 @@ Depois deste plano: o Aura está nas lojas, com Google Agenda, cadastro e uso in
 ### Implementation Tasks
 - [ ] **T1 (P1, human: ~1d / CC: ~30min)** — banco — Baseline do schema e migrations versionadas (OV-07, D16). Verify: banco novo criado só pelas migrations roda o dispatch.
 - [ ] **T2 (P1, human: ~1d / CC: ~45min)** — infra — Ambiente de teste (Supabase, app Meta de teste, sandbox Asaas, URLs fixas) e `app_flags` (D16, D17, OV-08, OV-15). Verify: prévia não envia para números reais.
-- [ ] **T3 (P1, human: ~1d / CC: ~30min)** — WhatsApp — Sessão de serviço sem magic link (OV-01). Verify: duas mensagens seguidas não invalidam login.
+- [x] **T3 (P1, human: ~1d / CC: ~30min)** — WhatsApp — Sessão de serviço sem magic link (OV-01). Feito em 2026-10-26: sessão guardada em `wa_sessions` e renovada por refresh token (src/lib/supabase/admin.ts); magic link só quando não há sessão. Verify: duas mensagens seguidas não invalidam login (pendente: conferir nos logs após as próximas mensagens reais).
 - [ ] **T4 (P1, human: ~2d / CC: ~1h)** — WhatsApp — Inbox durável, fila por usuário, payload de botões, idempotência (D13, OV-04, OV-05). Verify: teste com duas mensagens simultâneas e toque duplo.
 - [ ] **T5 (P1, human: ~1d / CC: ~45min)** — lembretes — `wa_sends`, `statuses`, reserva e alerta (D11, OV-03, OV-13). Verify: falha simulada gera reserva e alerta.
 - [ ] **T6 (P1, human: ~3d / CC: ~2h)** — Google — OAuth com `state`, sincronização com push autenticado, lembretes do Google (D10, etapa 1). Verify: evento criado no Google gera 1 lembrete no horário.
