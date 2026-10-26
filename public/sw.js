@@ -1,5 +1,5 @@
 // Aura Cronos service worker: push notifications and an offline fallback for navigations.
-const CACHE = "aura-v1";
+const CACHE = "aura-v2";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/offline.html"])).then(() => self.skipWaiting()));
@@ -24,8 +24,8 @@ self.addEventListener("push", (e) => {
     body: data.body || "",
     tag: data.tag,
     renotify: true,
-    icon: "/icons/192",
-    badge: "/icons/192",
+    icon: "/brand/icon-192.png",
+    badge: "/brand/badge-96.png",
     data: { url: data.url || "/" },
     requireInteraction: !!data.urgent,
     vibrate: data.urgent ? [400, 200, 400, 200, 400, 200, 800] : [200, 100, 200],
