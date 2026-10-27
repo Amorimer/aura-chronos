@@ -21,7 +21,7 @@ export function DeleteAccount() {
             Se você assinou pela Play Store ou App Store, cancele a assinatura na loja também.
           </p>
           <label className="flex flex-col gap-1.5 text-sm">
-            Para confirmar, digite <strong>EXCLUIR</strong>
+            <span>Para confirmar, digite <strong>EXCLUIR</strong></span>
             <input name="confirm" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoCapitalize="characters" className={fieldCls} />
           </label>
           {state.error && <p role="alert" className="text-sm text-danger">{state.error}</p>}
