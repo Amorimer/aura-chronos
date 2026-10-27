@@ -10,7 +10,12 @@ export default function LoginPage() {
   const state = mode === "in" ? inState : upState;
   const pending = mode === "in" ? inPending : upPending;
   const [linkError, setLinkError] = useState(false);
-  useEffect(() => { setLinkError(new URLSearchParams(window.location.search).get("erro") === "link"); }, []);
+  const [deleted, setDeleted] = useState(false);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    setLinkError(q.get("erro") === "link");
+    setDeleted(q.get("conta") === "excluida");
+  }, []);
 
   return (
     <main className="min-h-dvh flex flex-col justify-center px-6 py-10 max-w-sm mx-auto pt-safe">
@@ -65,6 +70,9 @@ export default function LoginPage() {
           <p role="alert" className="text-sm text-danger bg-danger-soft rounded-xl px-4 py-3">
             {state.error ?? "O link expirou ou já foi usado. Entre com e-mail e senha."}
           </p>
+        )}
+        {deleted && !state.error && !state.info && (
+          <p role="status" className="text-sm bg-accent-soft rounded-xl px-4 py-3">Sua conta e todos os seus dados foram excluídos.</p>
         )}
         {state.info && <p role="status" className="text-sm bg-accent-soft rounded-xl px-4 py-3">{state.info}</p>}
         <button disabled={pending} className="h-12 mt-2 rounded-full bg-accent text-on-accent font-semibold disabled:opacity-60">

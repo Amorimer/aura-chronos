@@ -9,6 +9,7 @@ import type { Profile } from "@/lib/types";
 import { Field, fieldCls } from "./sheet";
 import { IconTrash } from "./icons";
 import { WhatsAppConnect } from "./whatsapp-connect";
+import { DeleteAccount } from "./delete-account";
 
 const ZONES = ["America/Sao_Paulo", "America/Manaus", "America/Cuiaba", "America/Belem", "America/Fortaleza", "America/Recife",
   "America/Bahia", "America/Porto_Velho", "America/Rio_Branco", "America/Noronha", "Europe/Lisbon", "America/New_York", "UTC"];
@@ -156,7 +157,8 @@ export function Settings({ profile, memories, email, feedUrl }: { profile: Profi
           <p className="text-sm text-muted">
             <a href="/termos" target="_blank" className="underline">Termos de Uso</a> · <a href="/privacidade" target="_blank" className="underline">Política de Privacidade</a>
           </p>
-          <form action={signOut}><button className="text-sm font-semibold text-danger">Sair</button></form>
+          <form action={signOut}><button className="text-sm font-semibold">Sair</button></form>
+          <DeleteAccount />
         </Section>
       </div>
     </div>
