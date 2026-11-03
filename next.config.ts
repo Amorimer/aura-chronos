@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // Brand images other sites may copy (the company portfolio at amorimer.com.br).
+  async headers() {
+    return [{ source: "/brand/portfolio/:path*", headers: [{ key: "Access-Control-Allow-Origin", value: "*" }] }];
+  },
 };
 
 export default nextConfig;
