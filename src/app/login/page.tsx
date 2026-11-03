@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { signIn, signUp, type AuthState } from "./actions";
+import { CompanyLine } from "@/components/company-line";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"in" | "up">("in");
@@ -79,6 +80,7 @@ export default function LoginPage() {
           {pending ? "Aguarde…" : mode === "in" ? "Entrar" : "Criar conta"}
         </button>
       </form>
+      <CompanyLine className="mt-10 text-center" />
     </main>
   );
 }

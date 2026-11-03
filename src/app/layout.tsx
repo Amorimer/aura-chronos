@@ -5,7 +5,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Aura Cronos",
-  description: "Assistente pessoal: a autoridade absoluta em otimizar o seu tempo.",
+  authors: [{ name: "Amorímer" }],
+  publisher: "Amorímer",
+  description: "Aura Cronos, assistente pessoal da Amorímer: a autoridade absoluta em otimizar o seu tempo.",
   appleWebApp: { capable: true, title: "Aura Cronos", statusBarStyle: "default" },
   icons: { icon: [{ url: "/brand/favicon-48.png", sizes: "48x48" }, { url: "/brand/icon-192.png", sizes: "192x192" }], apple: "/brand/apple-180.png" },
   applicationName: "Aura Cronos",

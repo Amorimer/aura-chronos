@@ -1,5 +1,8 @@
 // WhatsApp Cloud API (official, by Meta). One business number sends to each user who linked their own WhatsApp.
 import { toWhatsApp } from "./rich-text";
+import { templateMessage } from "./wa-templates";
+import type { WaButton } from "./wa-buttons";
+export type { WaButton };
 // Inside the 24h customer-service window a free-form text goes out; outside it Meta only accepts an approved template.
 
 const API = `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION || "v23.0"}`;
@@ -52,7 +55,6 @@ export async function sendWhatsAppText(to: string, text: string) {
   return post({ to, type: "text", text: { body: toWhatsApp(text).slice(0, 4000), preview_url: false } });
 }
 
-export type WaButton = { id: string; title: string };
 
 /** Up to 3 reply buttons under a text. Only inside the 24h window. */
 export async function sendWhatsAppButtons(to: string, text: string, buttons: WaButton[]) {
@@ -87,33 +89,21 @@ export async function sendWhatsAppTemplate(to: string, name: string, lang: strin
 }
 
 /**
- * A reminder or notice. `window` says whether the user wrote to us in the last ~23h.
- * Template (outside the window): WHATSAPP_TEMPLATE with two body variables: {{1}} title, {{2}} details.
+ * A reminder or the morning brief. `window` says whether the user wrote to us in the last ~23h.
+ * Inside the window: free-form text with reply buttons (free). Outside: an approved template
+ * (see wa-templates.ts) with the same buttons; Meta charges per template sent.
  */
-export async function sendWhatsAppNotice(opts: { to: string; title: string; body: string; url?: string; window: boolean; buttons?: WaButton[] }) {
+export async function sendWhatsAppNotice(opts: {
+  to: string; title: string; body: string; url?: string; window: boolean; buttons?: WaButton[]; kind?: "reminder" | "brief";
+}) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
   const link = opts.url && appUrl ? `${appUrl}${opts.url}` : "";
   if (opts.window) {
     const text = `⏰ *${opts.title}*${opts.body ? `\n${opts.body}` : ""}${link ? `\n${link}` : ""}`;
     return opts.buttons?.length ? sendWhatsAppButtons(opts.to, text, opts.buttons) : sendWhatsAppText(opts.to, text);
   }
-  const template = process.env.WHATSAPP_TEMPLATE;
-  if (!template) return { ok: false, status: 0, json: { skipped: "window closed and no WHATSAPP_TEMPLATE set" } };
-  return post({
-    to: opts.to,
-    type: "template",
-    template: {
-      name: template,
-      language: { code: process.env.WHATSAPP_TEMPLATE_LANG || "pt_BR" },
-      components: [{
-        type: "body",
-        parameters: [
-          { type: "text", text: opts.title.slice(0, 200) },
-          { type: "text", text: (opts.body || "agora").slice(0, 300) },
-        ],
-      }],
-    },
-  });
+  if (process.env.WHATSAPP_TEMPLATES_OFF === "1") return { ok: false, status: 0, json: { skipped: "window closed and templates off" } };
+  return post({ to: opts.to, type: "template", template: templateMessage(opts.kind ?? "reminder", opts.title, opts.body, opts.buttons ?? []) });
 }
 
 /** Meta signs every webhook call with the app secret (X-Hub-Signature-256). */

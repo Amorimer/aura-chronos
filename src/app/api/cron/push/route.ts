@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   if (whatsappConfigured()) {
     await Promise.all((messages ?? []).filter((m) => m.wa?.phone).map(async (m) => {
       const r = await sendWhatsAppNotice({ to: m.wa!.phone, title: m.title, body: m.body, url: m.url, window: m.wa!.window,
-        buttons: noticeButtons(m.ref, m.brief) });
+        buttons: noticeButtons(m.ref, m.brief), kind: m.brief ? "brief" : "reminder" });
       if (r.ok) waSent++;
       else console.error("whatsapp send failed", r.status, JSON.stringify(r.json).slice(0, 300));
     }));

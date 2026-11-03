@@ -31,7 +31,7 @@ export async function POST() {
   }
   const r = await sendWhatsAppNotice({
     to: p.whatsapp_phone, title: "Teste: seu dia", body, url: "/agenda", window,
-    buttons: noticeButtons(ref, brief),
+    buttons: noticeButtons(ref, brief), kind: "brief",
   });
   return Response.json({ ok: r.ok, window, detail: r.ok ? undefined : r.json });
 }
