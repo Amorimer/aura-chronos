@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { sendWhatsAppText, validSignature } from "@/lib/whatsapp";
 import { answerOnWhatsApp, type Inbound } from "@/lib/whatsapp-agent";
 import { adminClient, adminConfigured } from "@/lib/supabase/admin";
+import { parseAction, runAction } from "@/lib/wa-actions";
 
 export const maxDuration = 120;
 
@@ -35,7 +36,8 @@ export async function POST(req: Request) {
 
 async function handle(messages: Inbound[], sb: SupabaseClient, secret: string, appUrl: string) {
   for (const m of messages) {
-    const text = (m.text?.body ?? m.button?.text ?? "").trim();
+    const tap = m.interactive?.button_reply ?? m.interactive?.list_reply;
+    const text = (m.text?.body ?? m.button?.text ?? tap?.title ?? "").trim();
     const code = text.toUpperCase().match(/AURA-[A-F0-9]{6}/)?.[0];
     if (code) {
       const { data: name } = await sb.rpc("wa_link", { p_secret: secret, p_code: code, p_phone: m.from });
@@ -59,8 +61,43 @@ async function handle(messages: Inbound[], sb: SupabaseClient, secret: string, a
     } else if (!adminConfigured()) {
       await sendWhatsAppText(m.from, `Por aqui eu envio seus lembretes. Para criar ou mudar compromissos, use o app:${appUrl ? `\n${appUrl}` : ""}`);
     } else {
-      const { data: p } = await adminClient().from("profiles").select("id").eq("whatsapp_phone", m.from).single();
-      if (p?.id) await answerOnWhatsApp(p.id, m);
+      const db = adminClient();
+      const { data: p } = await db.from("profiles").select("id,timezone,wa_pending").eq("whatsapp_phone", m.from).single();
+      if (!p?.id) continue;
+      const action = parseAction(tap?.id ?? m.button?.payload);
+      if (action) {
+        await onTap(db, p.id, p.timezone, m, tap?.title ?? text, action);
+        continue;
+      }
+      // After "Outra data", the next message is the new date for that item.
+      const pending = p.wa_pending as { action: string; kind: string; id: string; title: string; expires: string } | null;
+      let hint: string | undefined;
+      if (pending) {
+        await db.from("profiles").update({ wa_pending: null }).eq("id", p.id);
+        if (pending.action === "reschedule" && new Date(pending.expires) > new Date()) {
+          const what = pending.kind === "e" ? "o compromisso" : pending.kind === "t" ? "a tarefa" : "o lembrete";
+          const tool = pending.kind === "e" ? "update_event (mantenha a duração)" : pending.kind === "t" ? "update_task (due_at)" : "cancel_reminder com esse id e depois create_reminder com o mesmo título na nova hora";
+          hint = `O usuário tocou em "Adiar → Outra data" para ${what} "${pending.title}" (id ${pending.id}). A mensagem a seguir é a nova data/hora. Use ${tool} com esse id e confirme em uma linha. Se a mensagem não for uma data, responda normalmente.`;
+        }
+      }
+      await answerOnWhatsApp(p.id, m, hint);
     }
+  }
+}
+
+/** A tap on a reminder button. Stored in the chat history like any message, so the assistant has context. */
+async function onTap(db: SupabaseClient, userId: string, tz: string, m: Inbound, label: string, action: NonNullable<ReturnType<typeof parseAction>>) {
+  // Meta may deliver the same tap twice; the message id makes the second one a no-op.
+  const ins = await db.from("messages").insert({ id: `w${m.id}`, user_id: userId, role: "user", parts: [{ type: "text", text: `[botão no WhatsApp] ${label}` }] });
+  if (ins.error?.code === "23505") return;
+  try {
+    const reply = await runAction(db, userId, tz, m.from, action);
+    await db.from("messages").insert({
+      id: `a${m.id}`, user_id: userId, role: "assistant", parts: [{ type: "text", text: reply }],
+      created_at: new Date(Date.now() + 1).toISOString(),
+    });
+  } catch (err) {
+    console.error("wa tap failed", action, err);
+    await sendWhatsAppText(m.from, "Não consegui fazer isso agora. Tente de novo em instantes.");
   }
 }

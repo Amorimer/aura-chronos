@@ -5,6 +5,7 @@ export type EventRow = {
   start_at: string; end_at: string; all_day: boolean; recurrence: Recurrence | null;
   recurrence_until: string | null; remind_minutes: number | null; important: boolean;
   source: "chat" | "image" | "voice" | "manual"; created_at: string; updated_at: string;
+  done_at?: string | null;
 };
 
 export type Occurrence = EventRow & { occurrence_start: string; occurrence_end: string; key: string };

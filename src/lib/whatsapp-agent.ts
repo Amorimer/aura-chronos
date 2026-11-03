@@ -8,7 +8,8 @@ import { downloadMedia, markReadTyping, sendWhatsAppText } from "./whatsapp";
 export type Inbound = {
   id: string; from: string; type: string;
   text?: { body: string };
-  button?: { text: string };
+  button?: { text: string; payload?: string };
+  interactive?: { type: string; button_reply?: { id: string; title: string }; list_reply?: { id: string; title: string } };
   image?: { id: string; caption?: string };
   audio?: { id: string };
   document?: { id: string; caption?: string; mime_type?: string };
@@ -17,7 +18,7 @@ export type Inbound = {
 const newId = createIdGenerator({ prefix: "a", size: 16 });
 
 /** Runs the same assistant as the app for a message that arrived on WhatsApp, and replies there. */
-export async function answerOnWhatsApp(userId: string, m: Inbound) {
+export async function answerOnWhatsApp(userId: string, m: Inbound, hint?: string) {
   const session = await clientAsUser(userId);
   if (!session) {
     await sendWhatsAppText(m.from, "Não consegui abrir sua conta agora. Tente de novo em instantes.");
@@ -51,13 +52,14 @@ export async function answerOnWhatsApp(userId: string, m: Inbound) {
     const previous = ((history.data ?? []) as UIMessage[]).reverse();
 
     const content: (TextPart | FilePart)[] = [];
+    if (hint) content.push({ type: "text", text: `[contexto do sistema] ${hint}` });
     if (text) content.push({ type: "text", text });
     if (mediaId) {
       const media = await downloadMedia(mediaId);
       if (media) content.push({ type: "file", data: media.data, mediaType: media.mediaType });
       else content.push({ type: "text", text: "(não consegui baixar o arquivo enviado)" });
     }
-    if (!text && m.audio) content.unshift({ type: "text", text: "Mensagem de voz do usuário:" });
+    if (!text && m.audio) content.splice(hint ? 1 : 0, 0, { type: "text", text: "Mensagem de voz do usuário:" });
 
     const source = m.image || m.document ? "image" : m.audio ? "voice" : "chat";
     const result = await generateText({

@@ -14,7 +14,7 @@ const localDT = z.string().describe('Data e hora LOCAIS do usuário, formato "YY
 
 function present(e: EventRow, tz: string) {
   return {
-    id: e.id, title: e.title, location: e.location, notes: e.notes, all_day: e.all_day,
+    id: e.id, title: e.title, location: e.location, notes: e.notes, all_day: e.all_day, done: !!e.done_at,
     start: e.all_day ? toLocalDate(new Date(e.start_at), tz) : toLocalDateTime(new Date(e.start_at), tz),
     end: e.all_day ? toLocalDate(new Date(e.end_at), tz) : toLocalDateTime(new Date(e.end_at), tz),
     when: e.all_day ? toLocalDate(new Date(e.start_at), tz) : fmtDateTime(new Date(e.start_at), tz),
@@ -162,6 +162,7 @@ export function buildTools(ctx: Ctx) {
           patch.start_at = t.start_at.toISOString();
           patch.end_at = t.end_at.toISOString();
           patch.all_day = allDay;
+          patch.done_at = null;
         }
         const { data, error } = await supabase.from("events").update(patch).eq("id", input.id).select().single();
         if (error) return { error: error.message };

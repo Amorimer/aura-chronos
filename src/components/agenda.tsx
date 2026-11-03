@@ -131,7 +131,7 @@ export function Agenda({ tz }: { tz: string }) {
                     </div>
                     <div className={`w-1 rounded-full shrink-0 ${o.important ? "bg-warn" : "bg-accent"}`} />
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate">{o.title}</div>
+                      <div className={`font-medium truncate ${o.done_at ? "line-through text-muted" : ""}`}>{o.title}</div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted mt-0.5">
                         {o.location && <span className="flex items-center gap-1 min-w-0"><IconPin size={12} /><span className="truncate">{o.location}</span></span>}
                         {o.recurrence && <span className="flex items-center gap-1"><IconRepeat size={12} />repete</span>}

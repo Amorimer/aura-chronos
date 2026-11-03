@@ -47,8 +47,39 @@ export async function downloadMedia(mediaId: string): Promise<{ data: Uint8Array
   return { data: new Uint8Array(await res.arrayBuffer()), mediaType: (meta.mime_type || "application/octet-stream").split(";")[0] };
 }
 
+// preview_url off: links stay clickable without the big site card (logo, title) above the text.
 export async function sendWhatsAppText(to: string, text: string) {
-  return post({ to, type: "text", text: { body: toWhatsApp(text).slice(0, 4000), preview_url: true } });
+  return post({ to, type: "text", text: { body: toWhatsApp(text).slice(0, 4000), preview_url: false } });
+}
+
+export type WaButton = { id: string; title: string };
+
+/** Up to 3 reply buttons under a text. Only inside the 24h window. */
+export async function sendWhatsAppButtons(to: string, text: string, buttons: WaButton[]) {
+  if (!buttons.length) return sendWhatsAppText(to, text);
+  return post({
+    to, type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: toWhatsApp(text).slice(0, 1024) },
+      action: { buttons: buttons.slice(0, 3).map((b) => ({ type: "reply", reply: { id: b.id.slice(0, 256), title: b.title.slice(0, 20) } })) },
+    },
+  });
+}
+
+/** A list the user opens with one button and picks one row from (up to 10 rows). */
+export async function sendWhatsAppList(to: string, text: string, button: string, rows: { id: string; title: string; description?: string }[]) {
+  return post({
+    to, type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: toWhatsApp(text).slice(0, 1024) },
+      action: {
+        button: button.slice(0, 20),
+        sections: [{ title: "Hoje", rows: rows.slice(0, 10).map((r) => ({ id: r.id.slice(0, 200), title: r.title.slice(0, 24), ...(r.description ? { description: r.description.slice(0, 72) } : {}) })) }],
+      },
+    },
+  });
 }
 
 export async function sendWhatsAppTemplate(to: string, name: string, lang: string) {
@@ -59,12 +90,12 @@ export async function sendWhatsAppTemplate(to: string, name: string, lang: strin
  * A reminder or notice. `window` says whether the user wrote to us in the last ~23h.
  * Template (outside the window): WHATSAPP_TEMPLATE with two body variables: {{1}} title, {{2}} details.
  */
-export async function sendWhatsAppNotice(opts: { to: string; title: string; body: string; url?: string; window: boolean }) {
+export async function sendWhatsAppNotice(opts: { to: string; title: string; body: string; url?: string; window: boolean; buttons?: WaButton[] }) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
   const link = opts.url && appUrl ? `${appUrl}${opts.url}` : "";
   if (opts.window) {
     const text = `⏰ *${opts.title}*${opts.body ? `\n${opts.body}` : ""}${link ? `\n${link}` : ""}`;
-    return sendWhatsAppText(opts.to, text);
+    return opts.buttons?.length ? sendWhatsAppButtons(opts.to, text, opts.buttons) : sendWhatsAppText(opts.to, text);
   }
   const template = process.env.WHATSAPP_TEMPLATE;
   if (!template) return { ok: false, status: 0, json: { skipped: "window closed and no WHATSAPP_TEMPLATE set" } };

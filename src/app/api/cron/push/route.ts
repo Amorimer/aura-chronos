@@ -1,11 +1,14 @@
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 import { sendWhatsAppNotice, whatsappConfigured } from "@/lib/whatsapp";
+import { noticeButtons } from "@/lib/wa-actions";
 
 type Msg = {
   tag: string; title: string; body: string; urgent: boolean; url: string;
   subs: { endpoint: string; keys: { p256dh: string; auth: string } }[];
   wa?: { phone: string; window: boolean } | null;
+  ref?: string | null;
+  brief?: { events: number; tasks: number } | null;
 };
 
 export async function POST(req: Request) {
@@ -41,7 +44,8 @@ export async function POST(req: Request) {
   let waSent = 0;
   if (whatsappConfigured()) {
     await Promise.all((messages ?? []).filter((m) => m.wa?.phone).map(async (m) => {
-      const r = await sendWhatsAppNotice({ to: m.wa!.phone, title: m.title, body: m.body, url: m.url, window: m.wa!.window });
+      const r = await sendWhatsAppNotice({ to: m.wa!.phone, title: m.title, body: m.body, url: m.url, window: m.wa!.window,
+        buttons: noticeButtons(m.ref, m.brief) });
       if (r.ok) waSent++;
       else console.error("whatsapp send failed", r.status, JSON.stringify(r.json).slice(0, 300));
     }));
