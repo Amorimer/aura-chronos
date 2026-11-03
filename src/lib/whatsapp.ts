@@ -84,14 +84,10 @@ export async function sendWhatsAppList(to: string, text: string, button: string,
   });
 }
 
-export async function sendWhatsAppTemplate(to: string, name: string, lang: string) {
-  return post({ to, type: "template", template: { name, language: { code: lang } } });
-}
-
 /**
  * A reminder or the morning brief. `window` says whether the user wrote to us in the last ~23h.
- * Inside the window: free-form text with reply buttons (free). Outside: an approved template
- * (see wa-templates.ts) with the same buttons; Meta charges per template sent.
+ * Inside the window: free-form text with reply buttons (free). Outside: nothing, unless
+ * WHATSAPP_TEMPLATES_ON=1, then an approved template (see wa-templates.ts); Meta charges per template sent.
  */
 export async function sendWhatsAppNotice(opts: {
   to: string; title: string; body: string; url?: string; window: boolean; buttons?: WaButton[]; kind?: "reminder" | "brief";
@@ -102,7 +98,8 @@ export async function sendWhatsAppNotice(opts: {
     const text = `⏰ *${opts.title}*${opts.body ? `\n${opts.body}` : ""}${link ? `\n${link}` : ""}`;
     return opts.buttons?.length ? sendWhatsAppButtons(opts.to, text, opts.buttons) : sendWhatsAppText(opts.to, text);
   }
-  if (process.env.WHATSAPP_TEMPLATES_OFF === "1") return { ok: false, status: 0, json: { skipped: "window closed and templates off" } };
+  // Beta: zero cost. Templates are billed per message, so they only go out when explicitly turned on.
+  if (process.env.WHATSAPP_TEMPLATES_ON !== "1") return { ok: false, status: 0, json: { skipped: "window closed; paid templates off (set WHATSAPP_TEMPLATES_ON=1 to enable)" } };
   return post({ to: opts.to, type: "template", template: templateMessage(opts.kind ?? "reminder", opts.title, opts.body, opts.buttons ?? []) });
 }
 
