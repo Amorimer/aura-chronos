@@ -40,6 +40,12 @@ function tomorrowNine(tz: string) {
  * Returns a short text describing what happened, for the chat history.
  */
 export async function runAction(db: SupabaseClient, userId: string, tz: string, to: string, a: Action): Promise<string> {
+  if (a.verb === "keep") {
+    const msg = "Combinado 👍 Sigo te avisando dos seus compromissos por aqui.";
+    await sendWhatsAppText(to, msg);
+    return msg;
+  }
+
   if (a.verb === "day") {
     const { data } = await db.rpc("wa_day_items", { p_user: userId });
     const rows = (data ?? []) as { kind: Kind; id: string; at_label: string; title: string }[];

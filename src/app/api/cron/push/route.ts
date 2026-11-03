@@ -1,7 +1,7 @@
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 import { sendWhatsAppNotice, whatsappConfigured } from "@/lib/whatsapp";
-import { noticeButtons } from "@/lib/wa-actions";
+import { KEEP_HINT, noticeButtons } from "@/lib/wa-buttons";
 
 type Msg = {
   tag: string; title: string; body: string; urgent: boolean; url: string;
@@ -9,6 +9,7 @@ type Msg = {
   wa?: { phone: string; window: boolean } | null;
   ref?: string | null;
   brief?: { events: number; tasks: number } | null;
+  keepalive?: boolean;
 };
 
 export async function POST(req: Request) {
@@ -44,8 +45,9 @@ export async function POST(req: Request) {
   let waSent = 0;
   if (whatsappConfigured()) {
     await Promise.all((messages ?? []).filter((m) => m.wa?.phone).map(async (m) => {
-      const r = await sendWhatsAppNotice({ to: m.wa!.phone, title: m.title, body: m.body, url: m.url, window: m.wa!.window,
-        buttons: noticeButtons(m.ref, m.brief), kind: m.brief ? "brief" : "reminder" });
+      const body = m.keepalive ? m.body : `${m.body}\n\n_${KEEP_HINT}_`;
+      const r = await sendWhatsAppNotice({ to: m.wa!.phone, title: m.title, body, url: m.url || undefined, window: m.wa!.window,
+        buttons: noticeButtons(m.ref, m.brief, m.keepalive), kind: m.brief ? "brief" : "reminder" });
       if (r.ok) waSent++;
       else console.error("whatsapp send failed", r.status, JSON.stringify(r.json).slice(0, 300));
     }));

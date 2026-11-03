@@ -8,6 +8,7 @@ export type WaButton = { id: string; title: string };
 export type Kind = "e" | "t" | "r";
 export type Action =
   | { verb: "day" }
+  | { verb: "keep" }
   | { verb: "done" | "snooze" | "next" | "pick" | "item"; kind: Kind; id: string };
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
@@ -16,6 +17,7 @@ const RE = new RegExp(`^act:(done|snooze|next|pick|item):([etr]):(${UUID})$`);
 export function parseAction(id: string | undefined | null): Action | null {
   if (!id) return null;
   if (id === "act:day") return { verb: "day" };
+  if (id === "act:keep") return { verb: "keep" };
   const m = RE.exec(id);
   return m ? { verb: m[1] as "done", kind: m[2] as Kind, id: m[3] } : null;
 }
@@ -29,12 +31,21 @@ export function parseRef(ref: string | null | undefined): { kind: Kind; id: stri
 export const doneButton = (kind: Kind, id: string): WaButton => ({ id: `act:done:${kind}:${id}`, title: "✅ Concluído" });
 export const snoozeButton = (kind: Kind, id: string): WaButton => ({ id: `act:snooze:${kind}:${id}`, title: "⏰ Adiar" });
 export const dayButton: WaButton = { id: "act:day", title: "📋 Ver o dia" };
+export const keepButton: WaButton = { id: "act:keep", title: "👍 Continuar" };
 
-/** Buttons for a notice: the item it is about (Concluído, Adiar) and, with open tasks, the whole day. */
-export function noticeButtons(ref: string | null | undefined, brief?: { events: number; tasks: number } | null): WaButton[] {
+/**
+ * Buttons for a notice: the item it is about (Concluído, Adiar) and, with open tasks, the whole day.
+ * Every notice gets at least one button, because any tap is a reply and keeps the free 24h window open.
+ */
+export function noticeButtons(ref: string | null | undefined, brief?: { events: number; tasks: number } | null, keepalive?: boolean): WaButton[] {
+  if (keepalive) return [keepButton];
   const r = parseRef(ref);
   const out: WaButton[] = [];
   if (r) out.push(doneButton(r.kind, r.id), snoozeButton(r.kind, r.id));
   if (brief && (brief.tasks > 0 || brief.events > 1)) out.push(dayButton);
+  if (!out.length) out.push(keepButton);
   return out;
 }
+
+/** Line under WhatsApp notices: a tap on any button keeps the reminders coming for free. */
+export const KEEP_HINT = "Toque em um botão abaixo para continuar recebendo meus avisos por aqui.";

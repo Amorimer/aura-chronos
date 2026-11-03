@@ -27,5 +27,11 @@ test("reminder gets Concluído and Adiar; ids fit WhatsApp limits", () => {
 test("brief adds Ver o dia when tasks are open", () => {
   assert.deepEqual(noticeButtons(`e:${ID}`, { events: 2, tasks: 2 }).map((x) => x.id.split(":")[1]), ["done", "snooze", "day"]);
   assert.deepEqual(noticeButtons(null, { events: 0, tasks: 3 }).map((x) => x.title), ["📋 Ver o dia"]);
-  assert.deepEqual(noticeButtons(null, { events: 0, tasks: 0 }), []);
+  assert.deepEqual(noticeButtons(null, { events: 0, tasks: 0 }).map((x) => x.id), ["act:keep"]);
+});
+
+test("every notice has a button, because a tap keeps the free 24h window open", () => {
+  assert.deepEqual(noticeButtons(null, null, true).map((x) => x.id), ["act:keep"]);
+  assert.deepEqual(noticeButtons("r:nope").map((x) => x.id), ["act:keep"]);
+  assert.deepEqual(parseAction("act:keep"), { verb: "keep" });
 });
