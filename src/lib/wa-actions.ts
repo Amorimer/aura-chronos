@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDaysToDate, localToUtc, toLocalDate } from "./time";
 import { sendWhatsAppButtons, sendWhatsAppList, sendWhatsAppText } from "./whatsapp";
 import { doneButton, snoozeButton, type Action, type Kind } from "./wa-buttons";
+import { brl } from "./finance";
 export { noticeButtons, parseAction } from "./wa-buttons";
 
 type Item = { title: string; recurring: boolean; at: string | null };
@@ -61,6 +62,8 @@ export async function runAction(db: SupabaseClient, userId: string, tz: string, 
     })));
     return msg;
   }
+
+  if (a.kind === "x") return expenseAction(db, userId, to, a.verb, a.id);
 
   const item = await loadItem(db, userId, a.kind, a.id);
   if (!item) {
@@ -124,6 +127,32 @@ export async function runAction(db: SupabaseClient, userId: string, tz: string, 
   const msg = item.recurring
     ? `Concluído ✅ *${item.title}* por hoje. As próximas repetições continuam.`
     : `Concluído ✅ *${item.title}*.`;
+  await sendWhatsAppText(to, msg);
+  return msg;
+}
+
+/** Confirmar / Corrigir / Apagar on a spend registered over WhatsApp. */
+async function expenseAction(db: SupabaseClient, userId: string, to: string, verb: "ok" | "fix" | "del", id: string): Promise<string> {
+  const { data: e } = await db.from("expenses").select("amount,description,category,spent_on,status").eq("id", id).eq("user_id", userId).maybeSingle();
+  if (!e) {
+    const msg = "Não encontrei esse gasto. Ele pode ter sido apagado.";
+    await sendWhatsAppText(to, msg);
+    return msg;
+  }
+  const label = `${brl(Number(e.amount))} · ${e.description || e.category}`;
+  let msg: string;
+  if (verb === "ok") {
+    await db.from("expenses").update({ status: "confirmado" }).eq("id", id).eq("user_id", userId);
+    msg = `Confirmado ✅ ${label} em *${e.category}*.`;
+  } else if (verb === "del") {
+    await db.from("expenses").delete().eq("id", id).eq("user_id", userId);
+    msg = `Apagado 🗑️ ${label}.`;
+  } else {
+    await db.from("profiles").update({
+      wa_pending: { action: "fix_expense", kind: "x", id, title: label, expires: new Date(Date.now() + 30 * 60_000).toISOString() },
+    }).eq("id", userId);
+    msg = `O que está errado em *${label}* (${e.category})? Me diga o certo, ex.: "foi 45,90", "categoria farmácia" ou "foi ontem".`;
+  }
   await sendWhatsAppText(to, msg);
   return msg;
 }

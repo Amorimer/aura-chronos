@@ -3,7 +3,8 @@ import { assistantInstructions, MODEL } from "./assistant";
 import { buildTools } from "./agent-tools";
 import { getProfile } from "./data";
 import { clientAsUser } from "./supabase/admin";
-import { downloadMedia, markReadTyping, sendWhatsAppText } from "./whatsapp";
+import { downloadMedia, markReadTyping, sendWhatsAppButtons, sendWhatsAppText } from "./whatsapp";
+import { expenseButtons } from "./wa-buttons";
 
 export type Inbound = {
   id: string; from: string; type: string;
@@ -70,7 +71,19 @@ export async function answerOnWhatsApp(userId: string, m: Inbound, hint?: string
       stopWhen: isStepCount(8),
     });
     const reply = result.text.trim() || "Feito.";
-    await sendWhatsAppText(m.from, reply);
+    // Spends registered in this turn get Confirmar / Corrigir / Apagar, so a wrong value is caught right away.
+    const added = result.steps.flatMap((st) => st.toolResults)
+      .filter((r) => r.toolName === "add_expense")
+      .map((r) => (r.output as { expense?: { id: string; amount: string; description: string; category: string; date: string } }).expense)
+      .filter((e): e is NonNullable<typeof e> => !!e);
+    if (added.length === 1) {
+      await sendWhatsAppButtons(m.from, reply, expenseButtons(added[0].id));
+    } else {
+      await sendWhatsAppText(m.from, reply);
+      for (const e of added.slice(0, 5)) {
+        await sendWhatsAppButtons(m.from, `${e.amount} · ${e.description} · ${e.category} · ${e.date.split("-").reverse().join("/")}`, expenseButtons(e.id));
+      }
+    }
     await supabase.from("messages").insert({
       id: newId(), role: "assistant", parts: [{ type: "text", text: reply }],
       created_at: new Date(Date.now() + 1).toISOString(),

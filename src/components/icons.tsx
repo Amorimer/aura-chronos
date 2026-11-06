@@ -22,3 +22,6 @@ export const IconTrash = ({ className, size }: P) => (<svg {...base(size)} class
 export const IconCheck = ({ className, size }: P) => (<svg {...base(size)} className={className}><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>);
 export const IconSearch = ({ className, size }: P) => (<svg {...base(size)} className={className}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>);
 export const IconPhone = ({ className, size }: P) => (<svg {...base(size)} className={className}><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" /></svg>);
+export const IconWallet = ({ className, size }: P) => (<svg {...base(size)} className={className}><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3" /><rect x="4" y="8" width="16.5" height="11.5" rx="2.5" /><path d="M16 13.8h.2" /></svg>);
+export const IconEye = ({ className, size }: P) => (<svg {...base(size)} className={className}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>);
+export const IconEyeOff = ({ className, size }: P) => (<svg {...base(size)} className={className}><path d="M4 4l16 16M9.9 6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.5 7.6A16.5 16.5 0 0 0 2.5 12S6 18.5 12 18.5a9.4 9.4 0 0 0 4.4-1.1" /><path d="M10 10.2a2.8 2.8 0 0 0 3.9 3.9" /></svg>);

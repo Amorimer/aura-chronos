@@ -5,6 +5,7 @@ import { occurrencesBetween } from "./data";
 import { conflictsWith } from "./recurrence";
 import { addDaysToDate, dayRange, fmtDateTime, localToUtc, toLocalDate, toLocalDateTime } from "./time";
 import type { EventRow, TaskRow } from "./types";
+import { brl, canonicalCategory, monthRange, parseAmount, summarize, type ExpenseRow, type IncomeRow } from "./finance";
 
 type Ctx = { supabase: SupabaseClient; userId: string; tz: string; source: "chat" | "image" | "voice" };
 
@@ -338,6 +339,146 @@ export function buildTools(ctx: Ctx) {
       execute: async ({ id }) => {
         const { error } = await supabase.from("memories").delete().eq("id", id);
         return error ? { error: error.message } : { forgotten: id };
+      },
+    }),
+
+    // ---- Financeiro ------------------------------------------------------------
+    add_expense: tool({
+      description: "Registra um GASTO do usuário (compra, conta paga, corrida, mercado...). Use quando ele contar que gastou/pagou algo, mandar foto de nota fiscal, cupom, comprovante ou recibo. Fica 'pendente' até o usuário confirmar. Um registro por compra; para várias compras na mesma mensagem, chame uma vez para cada.",
+      inputSchema: z.object({
+        amount: z.union([z.number(), z.string()]).describe("Valor em reais. Ex.: 52.9 ou \"52,90\". Na nota fiscal, use o TOTAL pago."),
+        description: z.string().max(200).describe("O que foi, curto. Ex.: \"Mercado Guanabara\", \"Uber para o centro\"."),
+        category: z.string().nullish().describe("Categoria: Mercado, Feira, Transporte, Farmácia, Alimentação fora, Compras, Contas da casa, Saúde, Lazer, Educação, Outros, ou uma do usuário."),
+        date: z.string().nullish().describe("Dia do gasto, YYYY-MM-DD. Omitir se foi hoje. Na nota fiscal, use a data impressa."),
+      }),
+      execute: async (input) => {
+        const amount = parseAmount(input.amount);
+        if (!amount) return { error: "Valor inválido. Pergunte ao usuário o valor." };
+        await supabase.rpc("ensure_finance_categories");
+        const { data: cats } = await supabase.from("finance_categories").select("name");
+        const category = canonicalCategory(input.category, (cats ?? []).map((c) => c.name), input.description);
+        const { data, error } = await supabase.from("expenses").insert({
+          amount, description: input.description.slice(0, 200), category,
+          spent_on: input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : toLocalDate(new Date(), tz),
+          source: ctx.source === "image" ? "foto" : ctx.source === "voice" ? "audio" : "texto", status: "pendente",
+        }).select().single();
+        if (error) return { error: error.message };
+        const e = data as ExpenseRow;
+        return { expense: { id: e.id, amount: brl(Number(e.amount)), description: e.description, category: e.category, date: e.spent_on, status: e.status } };
+      },
+    }),
+
+    add_income: tool({
+      description: "Registra uma ENTRADA de dinheiro no mês (salário, pagamento recebido, pix recebido, venda).",
+      inputSchema: z.object({
+        amount: z.union([z.number(), z.string()]),
+        description: z.string().max(200),
+        date: z.string().nullish().describe("YYYY-MM-DD. Omitir se foi hoje."),
+      }),
+      execute: async (input) => {
+        const amount = parseAmount(input.amount);
+        if (!amount) return { error: "Valor inválido." };
+        const { data, error } = await supabase.from("incomes").insert({
+          amount, description: input.description.slice(0, 200),
+          received_on: input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : toLocalDate(new Date(), tz),
+        }).select().single();
+        if (error) return { error: error.message };
+        const i = data as IncomeRow;
+        return { income: { id: i.id, amount: brl(Number(i.amount)), description: i.description, date: i.received_on } };
+      },
+    }),
+
+    list_expenses: tool({
+      description: "Lista gastos de um mês (padrão: mês atual). Pode filtrar por categoria ou só os pendentes de confirmação.",
+      inputSchema: z.object({
+        month: z.string().nullish().describe("YYYY-MM"),
+        category: z.string().nullish(),
+        only_pending: z.boolean().nullish(),
+      }),
+      execute: async ({ month, category, only_pending }) => {
+        const r = monthRange(month && /^\d{4}-\d{2}$/.test(month) ? month : toLocalDate(new Date(), tz).slice(0, 7));
+        let q = supabase.from("expenses").select("*").order("spent_on", { ascending: false }).limit(100);
+        if (only_pending) q = q.eq("status", "pendente");
+        else q = q.gte("spent_on", r.start).lt("spent_on", r.end);
+        if (category) q = q.ilike("category", category.replace(/[%_]/g, ""));
+        const { data, error } = await q;
+        if (error) return { error: error.message };
+        return { expenses: (data as ExpenseRow[]).map((e) => ({ id: e.id, amount: brl(Number(e.amount)), description: e.description, category: e.category, date: e.spent_on, status: e.status })) };
+      },
+    }),
+
+    month_summary: tool({
+      description: "Resumo financeiro do mês: entradas, total de gastos, saldo e gastos por categoria (padrão: mês atual).",
+      inputSchema: z.object({ month: z.string().nullish().describe("YYYY-MM") }),
+      execute: async ({ month }) => {
+        const m = month && /^\d{4}-\d{2}$/.test(month) ? month : toLocalDate(new Date(), tz).slice(0, 7);
+        const r = monthRange(m);
+        const [ex, inc] = await Promise.all([
+          supabase.from("expenses").select("amount,category,status").gte("spent_on", r.start).lt("spent_on", r.end),
+          supabase.from("incomes").select("amount").gte("received_on", r.start).lt("received_on", r.end),
+        ]);
+        if (ex.error || inc.error) return { error: (ex.error ?? inc.error)!.message };
+        const s = summarize(ex.data as ExpenseRow[], inc.data as IncomeRow[]);
+        return {
+          month: m, entradas: brl(s.income), gastos: brl(s.spent), saldo: brl(s.balance), pendentes: s.pending,
+          por_categoria: s.categories.map((c) => ({ categoria: c.name, total: brl(c.total), quantidade: c.count })),
+        };
+      },
+    }),
+
+    confirm_expense: tool({
+      description: "Confirma um gasto pendente (o usuário disse que está certo).",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: async ({ id }) => {
+        const { error } = await supabase.from("expenses").update({ status: "confirmado" }).eq("id", id);
+        return error ? { error: error.message } : { ok: true };
+      },
+    }),
+
+    update_expense: tool({
+      description: "Corrige um gasto: valor, descrição, categoria ou data. Depois de corrigir, fica confirmado.",
+      inputSchema: z.object({
+        id: z.string().uuid(),
+        amount: z.union([z.number(), z.string()]).nullish(),
+        description: z.string().max(200).nullish(),
+        category: z.string().nullish(),
+        date: z.string().nullish().describe("YYYY-MM-DD"),
+      }),
+      execute: async (input) => {
+        const patch: Record<string, unknown> = { status: "confirmado" };
+        if (input.amount != null) {
+          const a = parseAmount(input.amount);
+          if (!a) return { error: "Valor inválido." };
+          patch.amount = a;
+        }
+        if (input.description) patch.description = input.description;
+        if (input.category) {
+          const { data: cats } = await supabase.from("finance_categories").select("name");
+          patch.category = canonicalCategory(input.category, (cats ?? []).map((c) => c.name));
+        }
+        if (input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date)) patch.spent_on = input.date;
+        const { data, error } = await supabase.from("expenses").update(patch).eq("id", input.id).select().single();
+        if (error) return { error: error.message };
+        const e = data as ExpenseRow;
+        return { expense: { id: e.id, amount: brl(Number(e.amount)), description: e.description, category: e.category, date: e.spent_on, status: e.status } };
+      },
+    }),
+
+    delete_expense: tool({
+      description: "Apaga um gasto registrado por engano.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: async ({ id }) => {
+        const { error } = await supabase.from("expenses").delete().eq("id", id);
+        return error ? { error: error.message } : { ok: true };
+      },
+    }),
+
+    delete_income: tool({
+      description: "Apaga uma entrada registrada por engano.",
+      inputSchema: z.object({ id: z.string().uuid() }),
+      execute: async ({ id }) => {
+        const { error } = await supabase.from("incomes").delete().eq("id", id);
+        return error ? { error: error.message } : { ok: true };
       },
     }),
   };

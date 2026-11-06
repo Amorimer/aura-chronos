@@ -3,21 +3,26 @@
 //   kind: e = event, t = task, r = standalone reminder
 //   verb: done (Concluído), snooze (Adiar → shows next/pick), next (Próximo dia),
 //         pick (Outra data → next message is the new date), item (a row picked in "Ver o dia")
+//   Gastos (kind x): ok (Confirmar), fix (Corrigir → next message is the correction), del (Apagar)
 export type WaButton = { id: string; title: string };
 
 export type Kind = "e" | "t" | "r";
 export type Action =
   | { verb: "day" }
   | { verb: "keep" }
-  | { verb: "done" | "snooze" | "next" | "pick" | "item"; kind: Kind; id: string };
+  | { verb: "done" | "snooze" | "next" | "pick" | "item"; kind: Kind; id: string }
+  | { verb: "ok" | "fix" | "del"; kind: "x"; id: string };
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const RE = new RegExp(`^act:(done|snooze|next|pick|item):([etr]):(${UUID})$`);
+const RE_X = new RegExp(`^act:(ok|fix|del):x:(${UUID})$`);
 
 export function parseAction(id: string | undefined | null): Action | null {
   if (!id) return null;
   if (id === "act:day") return { verb: "day" };
   if (id === "act:keep") return { verb: "keep" };
+  const x = RE_X.exec(id);
+  if (x) return { verb: x[1] as "ok", kind: "x", id: x[2] };
   const m = RE.exec(id);
   return m ? { verb: m[1] as "done", kind: m[2] as Kind, id: m[3] } : null;
 }
@@ -31,6 +36,11 @@ export function parseRef(ref: string | null | undefined): { kind: Kind; id: stri
 export const doneButton = (kind: Kind, id: string): WaButton => ({ id: `act:done:${kind}:${id}`, title: "✅ Concluído" });
 export const snoozeButton = (kind: Kind, id: string): WaButton => ({ id: `act:snooze:${kind}:${id}`, title: "⏰ Adiar" });
 export const dayButton: WaButton = { id: "act:day", title: "📋 Ver o dia" };
+export const expenseButtons = (id: string): WaButton[] => [
+  { id: `act:ok:x:${id}`, title: "✅ Confirmar" },
+  { id: `act:fix:x:${id}`, title: "✏️ Corrigir" },
+  { id: `act:del:x:${id}`, title: "🗑️ Apagar" },
+];
 export const keepButton: WaButton = { id: "act:keep", title: "👍 Continuar" };
 
 /**

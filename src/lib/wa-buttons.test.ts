@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { noticeButtons, parseAction, parseRef } from "./wa-buttons.ts";
+import { expenseButtons, noticeButtons, parseAction, parseRef } from "./wa-buttons.ts";
 
 const ID = "3f2b8c1e-9a4d-4e2f-8b7a-1c2d3e4f5a6b";
 
@@ -34,4 +34,14 @@ test("every notice has a button, because a tap keeps the free 24h window open", 
   assert.deepEqual(noticeButtons(null, null, true).map((x) => x.id), ["act:keep"]);
   assert.deepEqual(noticeButtons("r:nope").map((x) => x.id), ["act:keep"]);
   assert.deepEqual(parseAction("act:keep"), { verb: "keep" });
+});
+
+test("spend buttons: Confirmar, Corrigir, Apagar", () => {
+  const id = "3f2b8c1e-9a4d-4e2f-8b7a-1c2d3e4f5a6b";
+  const b = expenseButtons(id);
+  assert.deepEqual(b.map((x) => x.title), ["✅ Confirmar", "✏️ Corrigir", "🗑️ Apagar"]);
+  assert.deepEqual(b.map((x) => parseAction(x.id)), [{ verb: "ok", kind: "x", id }, { verb: "fix", kind: "x", id }, { verb: "del", kind: "x", id }]);
+  assert.equal(parseAction(`act:done:x:${id}`), null);
+  assert.equal(parseAction(`act:ok:e:${id}`), null);
+  for (const x of b) assert.ok(x.title.length <= 20);
 });

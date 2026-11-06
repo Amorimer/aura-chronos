@@ -74,7 +74,9 @@ async function handle(messages: Inbound[], sb: SupabaseClient, secret: string, a
       let hint: string | undefined;
       if (pending) {
         await db.from("profiles").update({ wa_pending: null }).eq("id", p.id);
-        if (pending.action === "reschedule" && new Date(pending.expires) > new Date()) {
+        if (pending.action === "fix_expense" && new Date(pending.expires) > new Date()) {
+          hint = `O usuário tocou em "Corrigir" no gasto "${pending.title}" (id ${pending.id}). A mensagem a seguir diz o que corrigir (valor, descrição, categoria ou data). Use update_expense com esse id e confirme em uma linha. Se ele pedir para apagar, use delete_expense.`;
+        } else if (pending.action === "reschedule" && new Date(pending.expires) > new Date()) {
           const what = pending.kind === "e" ? "o compromisso" : pending.kind === "t" ? "a tarefa" : "o lembrete";
           const tool = pending.kind === "e" ? "update_event (mantenha a duração)" : pending.kind === "t" ? "update_task (due_at)" : "cancel_reminder com esse id e depois create_reminder com o mesmo título na nova hora";
           hint = `O usuário tocou em "Adiar → Outra data" para ${what} "${pending.title}" (id ${pending.id}). A mensagem a seguir é a nova data/hora. Use ${tool} com esse id e confirme em uma linha. Se a mensagem não for uma data, responda normalmente.`;
