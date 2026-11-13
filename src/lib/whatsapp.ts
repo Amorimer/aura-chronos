@@ -77,7 +77,7 @@ export async function sendWhatsAppShareCard(to: string, text: string) {
     interactive: {
       type: "cta_url",
       body: { text: body },
-      action: { name: "cta_url", parameters: { display_text: "↪ Compartilhar", url: `https://wa.me/?text=${encodeURIComponent(body).slice(0, 1800)}` } },
+      action: { name: "cta_url", parameters: { display_text: "↪ Compartilhar", url: `https://wa.me/?text=${encodeURIComponent(body.slice(0, 700))}` } },
     },
   });
   if (r.ok) return r;
