@@ -69,6 +69,19 @@ export async function sendWhatsAppButtons(to: string, text: string, buttons: WaB
   });
 }
 
+/** A message with one "Compartilhar" button that opens WhatsApp's forward screen with the same text. */
+export async function sendWhatsAppShareCard(to: string, text: string) {
+  const body = toWhatsApp(text).slice(0, 1024);
+  return post({
+    to, type: "interactive",
+    interactive: {
+      type: "cta_url",
+      body: { text: body },
+      action: { name: "cta_url", parameters: { display_text: "↪ Compartilhar", url: `https://wa.me/?text=${encodeURIComponent(body).slice(0, 1800)}` } },
+    },
+  });
+}
+
 /** A list the user opens with one button and picks one row from (up to 10 rows). */
 export async function sendWhatsAppList(to: string, text: string, button: string, rows: { id: string; title: string; description?: string }[]) {
   return post({

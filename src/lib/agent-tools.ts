@@ -49,6 +49,26 @@ async function findConflicts(ctx: Ctx, start: Date, end: Date, id?: string) {
   }));
 }
 
+/**
+ * All-day events have no hour to count back from, so their notice is a reminder at 09:00 on the day
+ * (and on every repeat). Editing an event clears its reminders, so update_event calls this again.
+ */
+async function addAllDayNotice(ctx: Ctx, ev: EventRow): Promise<string | null> {
+  if (!ev.all_day || ev.remind_minutes != null) return null;
+  const { supabase, tz } = ctx;
+  const day = toLocalDate(new Date(ev.start_at), tz);
+  let at = localToUtc(`${day}T09:00`, tz);
+  const step = ev.recurrence ? { daily: 1, weekly: 7, monthly: 30, yearly: 365 }[ev.recurrence] * 86400000 : 0;
+  while (step && at.getTime() <= Date.now()) at = new Date(at.getTime() + step);
+  const until = ev.recurrence_until ? localToUtc(`${ev.recurrence_until}T23:59`, tz) : null;
+  if (at.getTime() <= Date.now() || (until && at >= until)) return null;
+  const r = await supabase.from("reminders").insert({
+    title: ev.title, body: `Hoje${ev.location ? ` · ${ev.location}` : ""}`, remind_at: at.toISOString(),
+    recurrence: ev.recurrence ?? null, until_at: until?.toISOString() ?? null, event_id: ev.id,
+  });
+  return r.error ? null : "09:00";
+}
+
 export function buildTools(ctx: Ctx) {
   const { supabase, tz } = ctx;
   return {
@@ -119,7 +139,8 @@ export function buildTools(ctx: Ctx) {
         }).select().single();
         if (error) return { error: error.message };
         const conflicts = allDay ? [] : await findConflicts(ctx, t.start_at, t.end_at, data.id);
-        return { event: present(data as EventRow, tz), conflicts };
+        const remind_at_time = input.remind_minutes == null ? await addAllDayNotice(ctx, data as EventRow) : null;
+        return { event: { ...present(data as EventRow, tz), remind_at_time }, conflicts };
       },
     }),
 
@@ -169,7 +190,8 @@ export function buildTools(ctx: Ctx) {
         if (error) return { error: error.message };
         const ev = data as EventRow;
         const conflicts = ev.all_day ? [] : await findConflicts(ctx, new Date(ev.start_at), new Date(ev.end_at), ev.id);
-        return { event: present(ev, tz), conflicts };
+        const remind_at_time = await addAllDayNotice(ctx, ev);
+        return { event: { ...present(ev, tz), remind_at_time }, conflicts };
       },
     }),
 

@@ -3,7 +3,9 @@ import { assistantInstructions, MODEL } from "./assistant";
 import { buildTools } from "./agent-tools";
 import { getProfile } from "./data";
 import { clientAsUser } from "./supabase/admin";
-import { downloadMedia, markReadTyping, sendWhatsAppButtons, sendWhatsAppText } from "./whatsapp";
+import { downloadMedia, markReadTyping, sendWhatsAppButtons, sendWhatsAppShareCard, sendWhatsAppText } from "./whatsapp";
+import { eventCard, reminderCard, taskCard, type EventCard, type TaskCard } from "./wa-cards";
+import { toLocalDate, toLocalDateTime } from "./time";
 import { expenseButtons } from "./wa-buttons";
 
 export type Inbound = {
@@ -72,20 +74,38 @@ export async function answerOnWhatsApp(userId: string, m: Inbound, hint?: string
     });
     const reply = result.text.trim() || "Feito.";
     // Spends registered in this turn get Confirmar / Corrigir / Apagar, so a wrong value is caught right away.
-    const added = result.steps.flatMap((st) => st.toolResults)
+    const results = result.steps.flatMap((st) => st.toolResults);
+    // A card for each thing saved in this turn, built from the saved data (title, date, time, reminder, notes).
+    const today = toLocalDate(new Date(), profile.timezone);
+    const cards: string[] = [];
+    for (const r of results) {
+      const out = r.output as Record<string, unknown> | undefined;
+      if (!out || "error" in out) continue;
+      if ((r.toolName === "create_event" || r.toolName === "update_event") && out.event) {
+        cards.push(eventCard(out.event as EventCard, today, r.toolName === "create_event" ? "Adicionado" : "Atualizado"));
+      } else if ((r.toolName === "create_task" || r.toolName === "update_task") && out.task) {
+        cards.push(taskCard(out.task as TaskCard, today, r.toolName === "create_task" ? "Adicionada" : "Atualizada"));
+      } else if (r.toolName === "create_reminder" && out.reminder) {
+        const rem = out.reminder as { title: string; remind_at: string; recurrence: string | null };
+        cards.push(reminderCard({ title: rem.title, at: toLocalDateTime(new Date(rem.remind_at), profile.timezone), recurrence: rem.recurrence }, today));
+      }
+    }
+    // Spends registered in this turn get Confirmar / Corrigir / Apagar, so a wrong value is caught right away.
+    const added = results
       .filter((r) => r.toolName === "add_expense")
       .map((r) => (r.output as { expense?: { id: string; amount: string; description: string; category: string; date: string } }).expense)
       .filter((e): e is NonNullable<typeof e> => !!e);
-    if (added.length === 1) {
+    if (added.length === 1 && !cards.length) {
       await sendWhatsAppButtons(m.from, reply, expenseButtons(added[0].id));
     } else {
-      await sendWhatsAppText(m.from, reply);
+      if (reply !== "Feito." || !cards.length) await sendWhatsAppText(m.from, reply);
+      for (const c of cards.slice(0, 10)) await sendWhatsAppShareCard(m.from, c);
       for (const e of added.slice(0, 5)) {
         await sendWhatsAppButtons(m.from, `${e.amount} · ${e.description} · ${e.category} · ${e.date.split("-").reverse().join("/")}`, expenseButtons(e.id));
       }
     }
     await supabase.from("messages").insert({
-      id: newId(), role: "assistant", parts: [{ type: "text", text: reply }],
+      id: newId(), role: "assistant", parts: [{ type: "text", text: [reply, ...cards].join("\n\n") }],
       created_at: new Date(Date.now() + 1).toISOString(),
     });
   } catch (err) {
